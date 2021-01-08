@@ -2,91 +2,12 @@
   <div style="height:100%;" class="jas-flex-box is-vertical menuwrapper">
 
     <div class="is-grown menusubwrap" :style="menuStyle" ref="menubar">
-      <div>
 
+      <el-scrollbar :wrap-style="{height:'calc( 100% + 17px )'}" :view-style="{height:'calc ( 100% + 17% )'}" style="height: 100% ">
         <el-menu unique-opened :default-active="currentTap" class="el-menu-vertical-demo" @select="selectMenu" :collapse="!isExpend">
-          <!-- 第一层菜单开始 -->
-          <!-- tip:为什么不用递归渲染？因为vue组件递归的方式跟elementui提供的可收缩菜单插件相冲突，若要使用递归，就必须取消菜单可收缩的功能 -->
-          <div v-for="item in items" :key="item">
-            <el-submenu v-if="item.subs" :index="item.index">
-              <div slot="title">
-                <i :class="item.icon||'fa fa-folder' "></i>
-                <span slot="title">{{ item.title }}</span>
-              </div>
-              <!-- 第二层菜单开始 -->
-
-              <div v-for="subitem in item.subs" :key="subitem">
-                <el-submenu v-if="subitem.subs" :index="subitem.index">
-                  <div slot="title">
-                    <i :class=" subitem.icon "></i>
-                    <span slot="title">{{ subitem.title }}</span>
-                  </div>
-
-                  <!-- 第三层菜单开始 -->
-                  <div v-for="thirditem in subitem.subs" :key="thirditem">
-                    <el-submenu v-if="thirditem.subs" :index="thirditem.index">
-                      <div slot="title">
-                        <i :class="thirditem.icon"></i>
-                        <span slot="title">{{ thirditem.title }}</span>
-                      </div>
-                      <!-- 第四层菜单开始 -->
-                      <div v-for="fourthitem in thirditem.subs" :key="fourthitem">
-                        <el-submenu v-if="fourthitem.subs" :index="fourthitem.index">
-                          <div slot="title">
-                            <i :class="fourthitem.icon"></i>
-                            <span slot="title">{{ fourthitem.title }}</span>
-                          </div>
-
-                          <!-- 第五层菜单开始 -->
-                          <div v-for="fifthitem in fourthitem.subs" :key="fifthitem">
-                            <el-submenu v-if="fifthitem.subs" :index="fifthitem.index">
-                              <div slot="title">
-                                <i :class="fifthitem.icon"></i>
-                                <span slot="title">{{ fifthitem.title }}</span>
-                              </div>
-
-                            </el-submenu>
-                            <el-menu-item :index="fifthitem.index" v-else>
-                              <i :class="fifthitem.icon"></i>
-                              <span slot="title">{{ fifthitem.title }}</span>
-                            </el-menu-item>
-                          </div>
-                          <!-- 第五层菜单结束 -->
-
-                        </el-submenu>
-                        <el-menu-item :index="fourthitem.index" v-else>
-                          <i :class="fourthitem.icon"></i>
-                          <span slot="title">{{ fourthitem.title }}</span>
-                        </el-menu-item>
-                      </div>
-                      <!-- 第四层菜单结束 -->
-                    </el-submenu>
-                    <el-menu-item :index="thirditem.index" v-else>
-                      <i :class="thirditem.icon"></i>
-                      <span slot="title">{{ thirditem.title }}</span>
-                    </el-menu-item>
-                  </div>
-                  <!-- 第三层菜单结束 -->
-
-                </el-submenu>
-                <el-menu-item :index="subitem.index" v-else>
-                  <i :class="subitem.icon "></i>
-                  <span slot="title">{{ subitem.title }}</span>
-                </el-menu-item>
-              </div>
-              <!-- 第二层菜单结束 -->
-
-            </el-submenu>
-            <el-menu-item :index="item.index" v-else>
-              <i :class=" item.icon||'fa fa-folder' "></i>
-              <span slot="title">{{ item.title }}</span>
-            </el-menu-item>
-          </div>
-          <!-- 第一层菜单结束 -->
-          <!-- <nav-menu :nav-menus="items" /> -->
+          <JasSideMenu :menus="items"></JasSideMenu>
         </el-menu>
-
-      </div>
+      </el-scrollbar>
 
     </div>
     <div class="switchwrapper" @click="isExpend=!isExpend">
@@ -100,8 +21,12 @@
 
 </template>
 <script>
+import JasSideMenu from "./components/JasSideMenu";
+
 export default {
-  components: {},
+  components: {
+    JasSideMenu,
+  },
   data() {
     return {
       items: [],
@@ -117,70 +42,119 @@ export default {
       };
     },
   },
+  mounted() {
+    this._queryMenuData();
+  },
   methods: {
-    selectMenu() {},
+    selectMenu(index) {
+      console.log(index);
+      this.$emit(
+        "menuclick",
+        index,
+        this._getMenuInfoByIndex(index, this.items)
+      );
+    },
+    _getMenuInfoByIndex(index, aMenu) {
+      var _icon = "";
+      var _title = "";
+      var _closable = true;
+      var _link = "";
+      var isGetResult = false;
+
+      var getTitle = function (index, aMenu) {
+        for (var i = 0; i < aMenu.length; i++) {
+          var item = aMenu[i];
+
+          if (item.subs) {
+            //如果有子集递归处理
+
+            if (!isGetResult) {
+              _icon = item.icon;
+              _title = item.title;
+              getTitle(index, item.subs);
+            }
+          } else {
+            if (index === item.index) {
+              isGetResult = true;
+              _icon = item.icon;
+              _title = item.title;
+              _link = item.link;
+              _closable = item.closable !== false ? true : false;
+              return;
+            }
+          }
+        }
+      };
+      getTitle(index, aMenu);
+      return {
+        icon: _icon,
+        title: _title,
+        closable: _closable,
+        link: _link || "",
+      };
+    },
     _queryMenuData() {
-      // var that = this; // 获取左侧菜单
-      return;
+      var that = this; // 获取左侧菜单
 
-      // var url =
-      //   jasTools.base.rootPath +
-      //   "/jasframework/privilege/privilege/getAllUserFuntion.do";
+      this.$jasHttp
+        .get("/jasframework/privilege/privilege/getAllUserFuntion.do", {
+          menutype: "0",
+          appId: "402894a152681ba30152681e8b320003",
+          language: "zh_CN",
+        })
+        .then((data) => {
+          if (typeof data === "object" && data.length > 0) {
+            that.items = that._formatMenus(data);
+            if (!that.currentTap || that.currentTap == 0) {
+              that.currentTap = that._getFirstMenuId(that.items);
+              that.selectMenu(that.currentTap);
+            }
+          }
+        });
+    },
+    _getFirstMenuId(items) {
+      var obj = items[0];
+      if (obj.subs && obj.subs.length > 0) {
+        return this._getFirstMenuId(obj.subs);
+      }
+      return obj.id;
+    },
+    _formatMenus(aMenu) {
+      var _aMenu = JSON.parse(JSON.stringify(aMenu));
+      var switcher = function (arr) {
+        if (typeof arr === "object") {
+          arr.forEach(function (item) {
+            item.index = item.id || "";
+            item.icon = item.icon || ""; //fa-bars fa-bookmark
+            item.title = item.text;
+            if (!item.attributes) {
+              item.attributes = {};
+              item.attributes.URL =
+                "jasmvvm/pages/module-jasdoc/doc-verify/doc-verify.html";
+            }
 
-      // this.$jasHttp
-      //   .post("/cloudlink-core-framework/login/login", {
-      //     menutype: "0",
-      //     appId: that.appId,
-      //     language: "zh_CN",
-      //   })
-      //   .then((res) => {
-      //     if (res.data.success === 1) {
-      //       this.$jasStorage.set("token", res.data.token);
-      //       this.$jasStorage.set("userInfo", res.data.rows[0]);
-
-      //       // 可以直接登录
-      //     } else {
-      //       this.loginSwitcher = true;
-      //       this.$notify({
-      //         message: res.data.msg || "服务器连接失败，请您稍后再试",
-      //         type: "error",
-      //       });
-      //     }
-      //   })
-      //   .catch((err) => {
-      //     this.$notify({
-      //       message: "服务器连接失败，请您稍后再试",
-      //       type: "error",
-      //     });
-      //     console.log("err", err);
-      //   });
-
-      // $.ajax({
-      //   url: url + "?token=" + localStorage.getItem("token"),
-      //   type: "get",
-      //   async: true,
-      //   data: {
-      //     menutype: "0",
-      //     appId: that.appId,
-      //     language: "zh_CN",
-      //   },
-      //   success: function (data, xhr, param) {
-      //     if (typeof data === "object" && data.length > 0) {
-      //       that.items = that._formatMenus(data);
-      //       if (!that.currentTap || that.currentTap == 0) {
-      //         that.currentTap = that._getFirstMenuId(that.items);
-      //         that.menusOpened = [that.currentTap];
-      //       }
-      //       that.tabs = that._createTabsArr(that.menusOpened, that.items);
-      //     }
-      //   },
-      // });
+            if (item.attributes && item.attributes.URL) {
+              if (item.attributes.URL.indexOf("http") > -1) {
+                item.link = item.attributes.URL;
+              } else {
+                // item.link = jasTools.base.rootPath + "/" + item.attributes.URL;
+              }
+            }
+            item.subs = item.children;
+            if (item.subs) {
+              switcher(item.subs);
+            }
+          });
+        }
+      };
+      switcher(_aMenu);
+      return _aMenu;
     },
   },
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .menuwrapper {
   border-right: solid 1px #e6e6e6;
   overflow: hidden;
@@ -210,5 +184,88 @@ export default {
   border-top: solid 1px #1f2630;
   font-size: 16px;
   color: #e1e1e1;
+}
+
+.el-menu {
+  background: #344052;
+}
+
+.el-submenu__title {
+  color: #ececec;
+}
+
+.el-menu-item {
+  /* font-size: 12px; */
+  color: #ececec;
+}
+.el-menu-item.is-active {
+  color: #319ce4;
+}
+.el-submenu__title:hover,
+.el-submenu__title:focus {
+  outline: none;
+  background-color: #1f2630;
+}
+
+.el-menu .el-menu-item:hover {
+  background: #1f2630;
+}
+
+.el-menu .el-menu-item.is-active {
+  /* border-left: 3px solid #5fb8ff; */
+  background: #1f2630;
+  /* color:#ececec */
+}
+
+.el-submenu__title i {
+  color: #ececec;
+}
+
+.el-menu-item i {
+  color: #ececec;
+}
+.el-menu-item.is-active i {
+  color: #319ce4;
+}
+
+.is-opened .el-menu-item {
+  background: #222e3c;
+}
+
+.is-opened .el-menu {
+  background: #222e3c;
+}
+
+.el-menu-item [class^="fa"] {
+  margin-right: 5px;
+  width: 20px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 18px;
+  vertical-align: middle;
+}
+
+.el-submenu [class^="fa"] {
+  vertical-align: middle;
+  margin-right: 5px;
+  width: 20px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 18px;
+}
+
+.el-scrollbar__wrap {
+  height: calc(100% + 17px);
+}
+
+.el-menu--collapse .el-submenu__title span {
+  height: 0;
+  width: 0;
+  overflow: hidden;
+  visibility: hidden;
+  display: inline-block;
+}
+.el-menu--collapse .el-submenu__icon-arrow {
+  display: none;
 }
 </style>

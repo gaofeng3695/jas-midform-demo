@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title></title>
+    <!-- <link rel="stylesheet" href="./libelement-ui/element-#0E2B4A/src/index.css"> -->
+    <link rel="stylesheet" href="./../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+    <link rel="stylesheet" href="./../../lib/font-awesome-4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./../../lib/vue-treeselect/vue-treeselect.min.css">
+
+    <link rel="stylesheet" href="./../../common/css/main.css">
+    <link rel="stylesheet" href="./../../common/css/element-reset.css">
+    <style>
+        .searchWrapper {
+            overflow: unset !important;
+        }
+
+        .vue-treeselect__control {
+            height: 34px;
+        }
+
+        .el-table .cell {
+            white-space: pre-line;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" v-cloak>
+        <!-- <jas-list-wrapper ref="mylist"> -->
+        <div slot="list" class="jas-flex-box is-vertical is-grown" style="padding-top: 10px !important;">
+            <div style="padding: 10px 0;" v-if="privilege.indexOf('bt_update')>-1">
+
+                <el-button size="small" v-if="!ifEdit" plain type="primary" icon="fa fa-pencil-square-o"
+                    @click="editTable()">修改
+                </el-button>
+                <el-button size="small" v-if="ifEdit" plain type="primary" icon="fa fa-check" @click="saveTable()">
+                    保存
+                </el-button>
+                <el-button size="small" :disabled="!ifEdit" plain type="primary" icon="fa fa-refresh"
+                    @click="resetTable()">
+                    重置
+                </el-button>
+
+            </div>
+            <div style="padding: 10px 0;" v-if="privilege.indexOf('bt_update')<=-1">
+            </div>
+            <div class="is-grown">
+                <el-table :data="tableData" border :header-cell-style="headStyle" style="width: 100%"
+                    :span-method="arraySpanMethod" v-loading="loading">
+                    <el-table-column label="序号" prop="indexNo" align="center" width="50" fixed>
+                    </el-table-column>
+                    <el-table-column label="绩效指标" prop="indicatorName" min-width="100px" show-overflow-tooltip
+                        align="center">
+                    </el-table-column>
+                    <el-table-column label="指标权重" prop="weight" min-width="80px" show-overflow-tooltip align="center">
+                        <template slot-scope="scope">
+                            <!-- <el-input v-model="scope.row.weight" v-if="ifEdit"></el-input> -->
+                            <el-input-number v-if="ifEdit" v-model="scope.row.weight" :min="0" :precision="2"
+                                :step="0.05" :max="1.0"></el-input-number>
+                            <span v-if="!ifEdit">{{scope.row.weight*100+"%"}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="二级绩效指标" prop="secondIndicatorName" min-width="130px" show-overflow-tooltip
+                        align="center">
+                    </el-table-column>
+                    <el-table-column label="二级权重" prop="secondWeight" min-width="80px" show-overflow-tooltip
+                        align="center">
+                        <template slot-scope="scope">
+                            <el-input-number v-if="ifEdit && scope.row.secondIndicatorName"
+                                v-model="scope.row.secondWeight" :min="0" :precision="2" :step="0.05" :max="1.0">
+                            </el-input-number>
+                            <span
+                                v-if="!ifEdit || !scope.row.secondIndicatorName">{{scope.row.secondWeight*100+"%"}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="扣分说明" prop="description" min-width="180px" align="left">
+                    </el-table-column>
+                </el-table>
+            </div>
+        </div>
+
+        <!-- </jas-list-wrapper> -->
+
+    </div>
+</body>
+
+<script src="./../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../lib/vue/vue.js"></script>
+<script src="./../../lib/vue-multipane/vue-multipane.js"></script>
+
+<script src="./../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../common/components/jas-components.js"></script>
+
+<script src="./../../common/js/jas-tools.js"></script>
+<script>
+    var app = new Vue({
+        el: "#app",
+        data: function () {
+            return {
+                tableData: [],
+                headStyle: {
+                    'background-color': '#f5f7fa ',
+                    'text-align': 'center',
+                },
+                ifEdit: false,
+                newIndex: 1,
+                loading: false,
+                privilege: [],
+                privilegeCode: ""
+            }
+        },
+        created: function () {
+        	var that = this;
+        	var param = window.jasTools.base.getParamsInUrl(location.href);
+        	this.privilegeCode = param.privilegeCode || "";
+        	this.getPrivilege(function(){
+        		that.requestData();
+        	});
+        },
+        methods: {
+        	getPrivilege: function(cb){
+        		var that = this;
+        		if (this.privilegeCode) {
+        			var url = jasTools.base.rootPath + "/jasframework/privilege/privilege/getFunctionConfig.do";
+					jasTools.ajax.get(url, {
+						privilegeCode: that.privilegeCode, 
+						appId: "402894a152681ba30152681e8b320003" //应用id，值默认
+					}, function (data) {
+						that.privilege = data.rows.map(function (item) {
+							return item.functionType;
+						});
+						cb && cb();
+					});
+        		}else{
+        			this.privilege = ['bt_add', 'bt_update', 'bt_delete', 'bt_select', 'bt_export', 'bt_import'];
+        			cb && cb();
+        		}
+        	},
+        	editTable: function () {
+                var that = this;
+                that.ifEdit = true;
+            },
+            saveTable: function () {
+                var that = this;
+                if (this.saveBefore()) {
+                    var url = jasTools.base.rootPath + "/nmpsp/achievement/updateQuota.do";
+                    that.loading = true;
+                    jasTools.ajax.post(url, this.tableData, function (data) {
+                        that.ifEdit = false;
+                        that.requestData();
+                    });
+                }
+            },
+            resetTable: function () {
+                this.ifEdit = false;
+                this.requestData();
+            },
+            requestData: function () {
+                var that = this;
+                this.loading = true;
+                var url = jasTools.base.rootPath + "/jdbc/commonData/achievement/getList.do";
+                jasTools.ajax.post(url, {}, function (data) {
+                    that.tableData = data.rows;
+                    that.loading = false;
+                });
+            },
+            saveBefore: function () {
+                var that = this;
+                var sum = 0;
+                var secondSum = 0;
+                var group_code = "";
+                var flag = true;
+                var index_1
+                that.tableData.some(function (item, index) {
+                    index_1 = index;
+                    if (item.groupCode != group_code) {
+                        sum += item.weight * 100;
+                    }
+                    if (group_code == "" || group_code == item.groupCode) {
+                        secondSum += item.secondWeight * 100;
+                    } else {
+                        if (secondSum / 100 == 1) {
+                            secondSum = 0;
+                            secondSum += item.secondWeight * 100;
+                        } else {
+                            flag = false;
+                            return true;
+                        }
+                    }
+                    group_code = item.groupCode;
+                });
+                if (flag) {
+                    if (sum / 100 == 1) {
+                        return true
+                    } else {
+                        top.Vue.prototype.$message({
+                            type: 'error',
+                            message: '指标权重赋值错误'
+                        });
+                        return false;
+                    }
+                } else {
+                    var name = that.tableData[index_1 - 1].indicatorName
+                    top.Vue.prototype.$message({
+                        type: 'error',
+                        message: '"' + name + '" 的二级权重赋值错误'
+                    });
+                    return false;
+                }
+            },
+            arraySpanMethod: function ({ row, column, rowIndex, columnIndex }) {
+                if (columnIndex <= 2) {
+                    if (row.sort === 0) {
+                        return {
+                            rowspan: row.secondNum,
+                            colspan: 1
+                        };
+                    } else {
+                        return {
+                            rowspan: 0,
+                            colspan: 0
+                        };
+                    }
+                }
+            },
+            numAdd: function (num1, num2) {
+                var baseNum, baseNum1, baseNum2;
+                try {
+                    baseNum1 = num1.toString().split(".")[1].length;
+                } catch (e) {
+                    baseNum1 = 0;
+                }
+                try {
+                    baseNum2 = num2.toString().split(".")[1].length;
+                } catch (e) {
+                    baseNum2 = 0;
+                }
+                baseNum = Math.pow(10, Math.max(baseNum1, baseNum2));
+                return (num1 * baseNum + num2 * baseNum) / baseNum;
+            }
+        }
+    });
+</script>
+
+</html>

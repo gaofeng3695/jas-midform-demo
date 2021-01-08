@@ -15,7 +15,12 @@ const router = new Router({
     },
     {
       path: '/home',
-      component: resolve => require(['../views/module-home/Home.vue'], resolve)
+      component: resolve => require(['../views/module-home/Home.vue'], resolve),
+      children: [{
+        path: 'demo',
+        component: resolve => require(['../views/module-page-maker/form-diy/FormDiy.vue'], resolve),
+
+      }, ]
     },
     // {
     //   path: '/view-regist',

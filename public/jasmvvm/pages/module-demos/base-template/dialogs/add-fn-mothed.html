@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <link rel="stylesheet" href="./../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+  <link rel="stylesheet" href="./../../../../lib/element-ui/v2.12.0/theme-chalk/index.min.css">
+  <link rel="stylesheet" href="./../../../../common/css/main.css">
+
+</head>
+
+<body>
+  <div id="app">
+    <jas-dialog-wrapper>
+      <jas-base-group-title name="图片信息"></jas-base-group-title>
+
+      <div id="myupload"></div>
+
+      <jas-base-group-title name="附件信息"></jas-base-group-title>
+
+      <div id="myupload2"></div>
+
+
+      <div slot="footer">
+        <el-button size="small" @click="cancel()">取 消</el-button>
+        <el-button size="small" @click="savePic" type="primary">savePic</el-button>
+        <el-button size="small" @click="saveFile" type="primary">saveFile</el-button>
+        <el-button size="small" @click="save" type="primary">saveAll</el-button>
+      </div>
+    </jas-dialog-wrapper>
+
+  </div>
+</body>
+<script src="./../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../lib/vue/vue.js"></script>
+<!-- <script src="./../../../../lib/element-ui/v2.4.1/index.min.js"></script> -->
+<script src="./../../../../lib/element-ui/v2.12.0/index.min.js"></script>
+<!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script> -->
+<script src="./../../../../common/components/jas-components.js "></script>
+<script src="./../../../../common/js/jas-tools.js"></script>
+
+<script>
+  window.app = new Vue({
+    el: "#app",
+    data: function () {
+      var that = this;
+      return {
+        oid: '0e51a146-800b-40af-a7f4-60457b72d85a',
+        formData: {
+          fileDescription: '123123'
+        }
+      }
+    },
+    created: function () {
+      var that = this;
+      var param = window.jasTools.base.getParamsInUrl(location.href);
+
+    },
+    mounted: function () {
+      var that = this;
+
+      this.myupload1 = jasTools.base.fileUploader({
+        domId: '#myupload',
+        fileType: 'pic',
+        businessId: this.oid,
+        cbSuccessed: this.picSuccess,
+        cbfailed: function (obj) {
+          alert('失败');
+          console.log(obj)
+        }        
+      });
+      this.myupload2 = jasTools.base.fileUploader({
+        domId: '#myupload2',
+        fileType: 'file',
+        businessId: this.oid,
+        cbSuccessed: this.fileSuccess,
+
+        businessType: '',
+        maxSize: 4,
+        maxTotalSize: 5,
+        maxCount: 5,
+        filePreview: function (oid) {
+          alert('自定义预览方法' + oid)
+        },
+        picPreview: function (url) {
+          alert('自定义预览方法' + url)
+        },
+        cbfailed: function (obj) {
+          alert('失败');
+          console.log(obj)
+        }
+      });
+    },
+    methods: {
+      cancel: function (param) {
+        window.parent.jasTools.dialog.close(param);
+      },
+      submit: function (formName) {
+        var that = this;
+        this.$refs[formName].validate(function (valid) {
+          if (valid) {
+            that.save();
+          }
+        });
+      },
+      savePic: function () {
+        this.myupload1.upload();
+      },
+      saveFile: function () {
+        this.myupload2.upload();
+      },
+      picSuccess: function () {
+        this.saveFile()
+      },
+      fileSuccess: function () {
+        this.uploadSuccess()
+      },
+      save: function () {
+        this.savePic()
+      },
+      uploadSuccess: function () {
+        this.loading = false;
+        top.Vue.prototype.$message({
+          type: 'success',
+          message: !this.isEdit ? '保存成功' : '修改成功'
+        });
+        this.cancel(1);
+      },
+
+    },
+  });
+</script>
+
+</html>

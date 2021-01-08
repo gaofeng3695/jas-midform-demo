@@ -2,8 +2,8 @@ import axios from 'axios';
 import storage from './jas-storage';
 import Vue from 'vue';
 
-const ajax = function (type, url, oParam, isToken) {
-  if (isToken) {
+const ajax = function (type, url, oParam, isnoToken) {
+  if (!isnoToken) {
     let token = storage.get('token', 1000 * 60 * 60 * 24); // 按照过期时间取token
     if (!token) { // 未取到token，重新加载
       location.reload();
@@ -12,10 +12,13 @@ const ajax = function (type, url, oParam, isToken) {
     url = url + '?token=' + token;
   }
   var _type = type == 'post' ? 'post' : 'get';
+  let params = type == 'post' ? oParam : {
+    params: {
+      ...oParam
+    }
+  };
   return new Promise((resolve, reject) => {
-    axios[_type](url, {
-        ...oParam
-      })
+    axios[_type](url, params)
       .then(res => {
         let data = res.data;
         console.log(data)

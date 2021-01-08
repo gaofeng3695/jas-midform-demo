@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>自定义表单配置</title>
+  <link rel="stylesheet" href="./../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+  <link rel="stylesheet" href="./../../../lib/font-awesome-4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="./../../../lib/viewer/viewer.min.css">
+  <link rel="stylesheet" href="./../../../common/css/main.css">
+
+</head>
+
+<body>
+  <div id="app" v-cloak>
+
+    <!-- <jas-file-upload business-type="pic" business-id="0e51a146-800b-40af-a7f4-60457b72d85a"></jas-file-upload> -->
+
+    <br>
+    <el-button size="small" @click="openDialog(0)" type="primary">打开附件编辑界面</el-button>
+    <el-button size="small" @click="openDialog(1)" type="primary">打开附件编辑界面(方法)</el-button>
+    <el-button size="small" @click="openDialog(2)" type="primary">打开附件查看界面</el-button>
+    <el-button size="small" @click="openDialog(3)" type="primary">打开附件查看界面（方法）</el-button>
+    <nmg-county-cascader v-model="mycity"></nmg-county-cascader>
+  </div>
+</body>
+
+<script src="./../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../lib/vue/vue.js"></script>
+<script src="./../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../lib/viewer/viewer.min.js"></script>
+<script src="./../../../common/components/jas-components.js"></script>
+<script src="./../../../common/components/nmg-components.js"></script>
+<script src="./../../../common/js/jas-tools.js"></script>
+<script>
+  window.vm = new Vue({
+    el: '#app',
+    data: function () {
+      return {
+        mycity:'150302000000'
+
+      }
+    },
+    created: function () {
+      var that = this;
+
+
+    },
+    mounted: function () {
+
+    },
+    methods: {
+
+      openDialog: function (type) {
+        var aSrc = [
+          '/jasmvvm/pages/module-demos/base-template/dialogs/add.html',
+          '/jasmvvm/pages/module-demos/base-template/dialogs/add-fn-mothed.html',
+          '/jasmvvm/pages/module-demos/base-template/dialogs/detail.html',
+          '/jasmvvm/pages/module-demos/base-template/dialogs/detail-fn-mothed.html',
+        ]
+        top.jasTools.dialog.show({
+          width: '80%',
+          height: '90%',
+          title: '文件预览',
+          src: jasTools.base.rootPath + aSrc[type] ,
+        });
+      },
+
+
+    },
+  });
+</script>
+
+
+</html>

@@ -65,12 +65,16 @@ export default {
     },
     submitForm() {
       this.$jasHttp
-        .post("/jasframework/login/login.do", {
-          appId: "402894a152681ba30152681e8b320003",
-          loginNum: this.ruleForm.userid || "superadmin",
-          logintype: "0",
-          pass: this.encryption(this.ruleForm.pass || "1qazxsw2"),
-        })
+        .post(
+          "/jasframework/login/login.do",
+          {
+            appId: "402894a152681ba30152681e8b320003",
+            loginNum: this.ruleForm.userid || "superadmin",
+            logintype: "0",
+            pass: this.encryption(this.ruleForm.pass || "1qazxsw2"),
+          },
+          true
+        )
         .then((data) => {
           // console.log(data);
           this.$jasStorage.set("token", data.token);

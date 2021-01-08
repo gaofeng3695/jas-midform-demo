@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <title>二维地图</title>
+    <script>
+        //在引入init.js文件之前，定义dojoConfig全局变量，设置arcgis 模块命名空间
+        var dojoConfig = {
+            "parseOnLoad": true,
+            "async": true,
+            "baseUrl": "./jasarcgis/lib/esri/3.18/dojo",
+            "packages": [{
+                "name": "jasgroup",
+                "location": "../../../../ext" // 相对baseUrl的路径
+            }]
+        };
+    </script>
+    <link rel="stylesheet" href="./jasarcgis/lib/esri/3.18/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="./jasarcgis/lib/esri/3.18/esri/css/esri.css">
+
+    <script src="./jasarcgis/lib/html2canvas.min.js"></script>
+
+    <!--arcgis依赖-->
+    <script src="./jasarcgis/lib/esri/3.18/init.js"></script>
+    <link rel="stylesheet" href="./jasarcgis/lib/jquery-easyui/1.5.2/themes/default/easyui.css">
+    <link rel="stylesheet" href="./jasarcgis/lib/jquery-easyui/1.5.2/themes/icon.css">
+    <script src="../../lib/jquery/jquery-1.12.4.min.js"></script>
+    <script src="./jasarcgis/lib/jquery-easyui/1.5.2/jquery.easyui.min.js"></script>
+    <script src="./jasarcgis/lib/jquery-easyui/1.5.2/locale/easyui-lang-zh_CN.js"></script>
+    <!--地图插件api-->
+    <script src="./jasarcgis/map2d.js"></script>
+    <link rel="stylesheet" href="project-style.css">
+</head>
+
+<body class="claro">
+    <div id="jasMap"></div>
+    <script>
+        var layers = [];
+        var jasMap = new JasMap({
+            appConfig: "config-index.json",
+            context: {
+                autoClearHighlight: true
+            },
+            onError: function (e) {
+                if (e.type === "info") {
+                    console.info(e);
+                } else if (e.type === "error") {
+                    console.error(e);
+                } else if (e.type === "warn") {
+                    console.warn(e);
+                } else {
+                    console.log(e);
+                }
+            },
+            onMapLoaded: function (e) {
+
+
+            },
+            onLayerAdded: function (e) {
+                var baseLayer = ['TIANDITU-VEC', 'TIANDITU-CVA', 'TIANDITU-IMG', 'TIANDITU-CIA',
+                    'TIANDITU-TER', 'TIANDITU-CTA'
+                ]
+                if (!baseLayer.includes(e.layer.id)) {
+                    layers.push(e.layer.id);
+                }
+                localStorage.setItem("allLayers", JSON.stringify(layers));
+            }
+        });
+    </script>
+</body>
+
+</html>
