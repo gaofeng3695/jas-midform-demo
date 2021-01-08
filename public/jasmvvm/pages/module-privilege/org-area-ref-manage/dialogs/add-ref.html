@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Document</title>
+	<link rel="stylesheet" href="./../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+	<link rel="stylesheet" href="./../../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+	<link rel="stylesheet" href="./../../../../common/css/main.css">
+
+	<style>
+		html,
+		body {
+			width: 100%;
+		}
+
+		#app {
+			width: 100%;
+			height: 100%;
+			position: relative;
+			overflow: hidden;
+		}
+
+		.content {
+			height: calc(100% - 40px);
+			overflow-y: auto;
+			overflow-x: hidden;
+		}
+
+		.el-input-number,
+		.el-cascader,
+		.el-select {
+			width: 100%;
+		}
+
+		.dialog-footer {
+			padding-top: 8px;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app" v-cloak>
+
+		<jas-dialog-wrapper>
+			<el-form ref="tableFormData" :rules="rules" :model="tableFormData" label-width="120px">
+				<jas-base-group-title name="基本信息"></jas-base-group-title>
+				<el-row :gutter="10">
+					<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="8">
+						<el-form-item label="所属机构" prop="organizationId">
+							<el-cascader :options="treeData" :props="treeProps" v-model="unitIdArr" :show-all-levels="false" change-on-select clearable
+								placeholder="请选择所属机构" size="small">
+							</el-cascader>
+						</el-form-item>
+					</el-col>
+					<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="8">
+						<el-form-item label="行政区划" prop="areaId">
+							<el-cascader :options="areaTreeData" :props="areaTreeProps" v-model="areaIdArr" :show-all-levels="false" change-on-select clearable
+								placeholder="请选择行政区划" size="small">
+							</el-cascader>
+						</el-form-item>
+					</el-col>
+				</el-row>
+			</el-form>
+			<div slot="footer">
+				<el-button size="small" @click="cancel()">取 消</el-button>
+				<el-button size="small" :disabled="but_disabled" type="primary" @click="submit('tableFormData')">确 定</el-button>
+			</div>
+		</jas-dialog-wrapper>
+
+
+	</div>
+</body>
+<script src="./../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../lib/vue/vue.js"></script>
+<script src="./../../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../../common/components/jas-components.js"></script>
+<script src="./../../../../common/components/nmg-components.js"></script>
+<script src="./../../../../common/js/jas-tools.js"></script>
+<script>
+	var app = new Vue({
+		el: "#app",
+		data: function () {
+			var that = this;
+			return {
+				but_disabled: false,
+				rules: {
+					organizationId: [{
+						required: true,
+						message: '请输入所属机构',
+						trigger: 'blur'
+					}],
+					areaId: [{
+						required: true,
+						message: '请输入行政区划',
+						trigger: 'blur'
+					}],
+				},
+				tableFormData: {
+					"organizationId": "",	//机构id
+					"areaId": "", //行政区划id
+					"organizationType": "2",
+				},
+				treeProps: {
+					value: 'id',
+					label: 'text',
+				},
+				areaTreeProps: {
+					value: 'id',
+					label: 'text',
+				},
+				treeData: [],
+				areaTreeData: []
+
+			}
+		},
+		computed: {
+			unitIdArr: {
+				get: function () {
+					if (!this.treeData || !this.tableFormData.organizationId || !this.treeData.length) return [];
+					return jasTools.base.getIdArrFromTree(this.treeData, this.tableFormData.organizationId);
+				},
+				set: function (newValue) {
+					this.tableFormData.organizationId = newValue[newValue.length - 1];
+				}
+			},
+			areaIdArr: {
+				get: function () {
+					if (!this.areaTreeData || !this.tableFormData.areaId || !this.areaTreeData.length) return [];
+					return jasTools.base.getIdArrFromTree(this.areaTreeData, this.tableFormData.areaId);
+				},
+				set: function (newValue) {
+					this.tableFormData.areaId = newValue[newValue.length - 1];
+				}
+			}
+		},
+
+		mounted: function () {
+			var param = window.jasTools.base.getParamsInUrl(location.href);
+			if (param.oid) {
+				this.isEdit = true;
+				this.oid = param.oid;
+				this.tableFormData.oid = this.oid;
+				this._requestRefDetail(param.oid);
+			}
+			if (param.pid) {
+				this.tableFormData.organizationId = param.pid;
+			}
+			this.requestUnitTree();
+			this.areaTreeData = this.formatAreaTree(_aNMGDist);
+		},
+		methods: {
+			submit: function (formName) {
+				var that = this;
+				this.$refs[formName].validate(function (valid) {
+					if (valid) {
+						that.save();
+					}
+				});
+			},
+			_requestRefDetail: function (oid) {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jdbc/commonData/organizationAreaRef/get.do";
+				jasTools.ajax.get(url, {
+					oid: oid
+				}, function (data) {
+					that.tableFormData = data.data;
+				});
+			},
+			save: function () {
+				var that = this;
+				var msg = "";
+				if (!this.isEdit) {
+					msg = "增加成功";
+					url = jasTools.base.rootPath + "/jdbc/commonData/organizationAreaRef/save.do";
+				} else {
+					msg = "修改成功";
+					url = jasTools.base.rootPath + "/jdbc/commonData/organizationAreaRef/update.do";
+				}
+				that.but_disabled = true;
+				jasTools.ajax.post(url, that.tableFormData, function (data) {
+					top.Vue.prototype.$message({
+						type: 'success',
+						message: msg
+					});
+					that.cancel(1);
+				}, function (data) {
+					if (data.status == -1) {
+						that.but_disabled = false;
+					}
+				});
+			},
+			requestUnitTree: function () {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jasframework/privilege/unit/getLeftTree.do?isroot=true";
+				jasTools.ajax.get(url, {}, function (data) {
+					that.treeData = that.formatOrgArr(data);
+				});
+			},
+			cancel: function (param) {
+				window.parent.jasTools.dialog.close(param);
+			},
+			formatOrgArr: function (treeData) {
+				var that = this;
+				var newTreeData= [];
+				var formatter = function (arr) {
+					arr.forEach(function (item) {
+						if(item.id == "b0a05414-6709-41b6-83d9-e308b5610dea"){	// 政府机构Id
+							newTreeData.push(item);
+						}
+						if (item.children) {
+							formatter(item.children);
+						}
+					})
+				};
+				formatter(treeData);
+				return newTreeData; 
+			},
+			formatAreaTree: function(treeData){
+				var that = this;
+				var formatter = function (arr) {
+					arr.forEach(function (item) {
+						item.id=item.oid;
+						item.text=item.name;
+						if (item.children) {
+							formatter(item.children);
+						}
+					})
+				};
+				formatter(treeData);
+				return treeData; 
+			}
+		},
+	});
+
+</script>
+
+</html>

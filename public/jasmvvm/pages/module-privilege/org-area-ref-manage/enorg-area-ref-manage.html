@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>行政区划配置</title>
+	<link rel="stylesheet" href="./../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+	<link rel="stylesheet" href="./../../../lib/font-awesome-4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="./../../../lib/vx-easyui/dist/themes/default/easyui.css">
+	<link rel="stylesheet" href="./../../../lib/vx-easyui/dist/themes/icon.css">
+	<link rel="stylesheet" href="./../../../lib/vx-easyui/dist/themes/vue.css">
+	<link rel="stylesheet" href="./../../../common/css/main.css">
+	<link rel="stylesheet" href="./../../../common/css/element-reset.css">
+	<style>
+		.resizepanel {
+			overflow-x: hidden;
+			overflow-y: auto;
+		}
+
+		.orgtitle {
+			height: 40px;
+			color: #fff;
+			background: #409EFF;
+			line-height: 40px;
+			text-align: center;
+		}
+
+		.orgtool {
+			height: 40px;
+			text-align: right;
+			padding: 0 10px;
+			overflow: hidden;
+		}
+
+		.filterwrap {
+			padding: 10px 10px 0px 10px;
+		}
+
+		.content {
+			height: 100%;
+			padding: 0 10px;
+		}
+
+		.content .el-tabs__content {
+			width: 100%;
+			-webkit-box-flex: 1;
+			-ms-flex: 1;
+			flex: 1;
+			overflow: auto;
+		}
+
+		.el-tabs__content {
+			overflow: hidden !important;
+		}
+
+		.elementStyle .datagrid-header,
+		.elementStyle .datagrid-td-rownumber {
+			background: unset;
+			background-color: #f5f7fa;
+		}
+
+		.elementStyle .panel-header,
+		.elementStyle .panel-body {
+			border-color: #ebeef5;
+			border: 1px solid #ebeef5;
+
+
+		}
+
+		.elementStyle .datagrid-htable {
+			color: #909399;
+			font-weight: 700;
+		}
+
+		.elementStyle .datagrid-btable,
+		.elementStyle .datagrid-ftable {
+			color: #606266;
+			font-weight: 500;
+		}
+
+		.elementStyle .datagrid-row-selected {
+			background: unset;
+			color: #606266;
+		}
+
+		.elementStyle .datagrid-row-over,
+		.elementStyle .datagrid-header td.datagrid-header-over {
+			background: #ecf5ff;
+			color: #606266;
+			cursor: default;
+		}
+
+		.elementStyle .datagrid-header-row,
+		.elementStyle .datagrid-row {
+			height: 42px;
+		}
+
+		.elementStyle .datagrid-header td,
+		.elementStyle .datagrid-body td,
+		.elementStyle .datagrid-footer td {
+			border-width: 0 1px 1px 0;
+			border-style: solid;
+			border-color: #ebeef5;
+		}
+
+		.foo {
+			box-sizing: border-box;
+			padding: 0px 10px 10px 10px;
+		}
+
+		#pane-orgAreaRef {
+			height: 100%
+		}
+
+		#pane-orgAreaRef>div:first-child {
+			height: 100%
+		}
+
+		.resizepanel {
+			display: flex;
+			flex-direction: column;
+			overflow: hidden !important;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app" v-cloak v-loading="loading.allLoading">
+
+		<jas-two-panel-resizer layout="vertical" length="47%">
+			<template slot="closePanel">
+				<div class="filterwrap">
+					<el-input prefix-icon="el-icon-search" size="small" placeholder="输入关键字进行过滤" v-model="filterText" clearable>
+					</el-input>
+				</div>
+				<div style="flex:1;overflow: auto;">
+					<el-tree class="is-grown" ref="orgtree" :data="orgnData" node-key="id" default-expand-all
+						:props="defaultProps" :default-expanded-keys="[currentNodeId]" highlight-current @node-click="clicknode"
+						:expand-on-click-node="false" :filter-node-method="filterNode">
+						<span class="custom-tree-node" slot-scope="scope">
+							<span :style="{color: scope.data.color}">{{ scope.data.text }}</span>
+						</span>
+					</el-tree>
+				</div>
+			</template>
+			<div class="content" slot="mainPanel">
+				<el-tabs v-model="activeName" class="jas-flex-box" style="height:100%;overflow: hidden">
+					<el-tab-pane label="行政区划配置" name="orgAreaRef">
+						<div v-loading="loading.orgAreaRefManage">
+							<div class="jas-flex-box is-vertical">
+								<div style="padding: 5px 0 15px 0;">
+									<el-button @click="createRef" size="small" plain type="primary" icon="fa fa-cog"
+										:disabled="!currentNodeId">行政区划配置</el-button>
+									<span class="fr">
+										<el-tooltip class="item" content="刷新" placement="top">
+											<el-button size="small" icon="el-icon-refresh" @click="_requestRefManage"></el-button>
+										</el-tooltip>
+									</span>
+								</div>
+								<div class="is-grown">
+									<tree-grid ref="mytable" class="elementStyle" :column-resizing="true" id-field="oid"
+										tree-field="areaName" :data="tableData" style="height:100%">
+										<grid-column field="areaName" halign="center" title="行政区划" width="80px">
+											<template slot="cell" slot-scope="scope">
+												<span>
+													{{scope.row.areaName}}
+												</span>
+											</template>
+										</grid-column>
+										<grid-column align="center" title="操作" width="20px">
+											<template slot="body" slot-scope="scope">
+												<el-button @click="getDetail(scope.row)" type="text" size="small">详情</el-button>
+												<el-button @click="deleteRef(scope.row)" type="text" size="small">删除</el-button>
+											</template>
+										</grid-column>
+									</tree-grid>
+								</div>
+							</div>
+						</div>
+					</el-tab-pane>
+				</el-tabs>
+			</div>
+		</jas-two-panel-resizer>
+	</div>
+</body>
+
+<script src="./../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../lib/vue/vue.js"></script>
+<script src="./../../../lib/vue-multipane/vue-multipane.js"></script>
+
+<script src="./../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../lib/vx-easyui/dist/vx-easyui-min.js"></script>
+<script src="./../../../common/components/jas-components.js"></script>
+<script src="./../../../common/js/jas-tools.js"></script>
+<script>
+	var vm = new Vue({
+		el: '#app',
+		data: function () {
+			return {
+				headStyle: {
+					'background-color': '#f5f7fa ',
+				},
+				loading: {
+					orgAreaRefManage: true
+				},
+				panelMoving: false,
+				panelShowed: true,
+				activeName: 'orgAreaRef',
+				filterText: '',
+				currentNode: '',
+				currentNodeId: '',
+				orgnData: [],
+				defaultProps: {
+					label: 'text',
+					orgnData: 'orgnData'
+				},
+				isClosed: false,
+				form: {},
+				btnSize: {
+					sm: 0,
+					md: 0,
+					lg: 0,
+					xl: 0,
+				},
+				isEditMode: false,
+				tableData: [],
+				isMultiProject: true,
+				isMulti: null,
+				enOrgId: "f4b587f5-4f84-4e51-9ae7-529a7f16b2f6"
+			}
+		},
+		computed: {},
+		watch: {
+			filterText: function (val) {
+				this.$refs.orgtree.filter(val);
+			},
+		},
+		mounted: function () {
+			var isMulti = sessionStorage.getItem("multiProject");
+			if (isMulti == 1) {
+				this.isMultiProject = false;
+			} else {
+				this.isMultiProject = false;
+			}
+
+			this._requestTable();
+		},
+		created: function () {
+			var that = this;
+			var param = window.jasTools.base.getParamsInUrl(location.href);
+			if (param.isEditMode) {
+				this.isEditMode = true;
+			} else {
+				this.isEditMode = false;
+			}
+			var isMultiProject = sessionStorage.getItem("multiProject");
+			if (isMultiProject == "1") {
+				that.isMulti = true;
+			}
+
+		},
+		methods: {
+			filterNode: function (value, data) {
+				if (!value) return true;
+				return data.text.indexOf(value) !== -1;
+			},
+			_requestTable: function () {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jasframework/privilege/unit/getLeftTree.do?isroot=true";
+				jasTools.ajax.get(url, {}, function (data) {
+					that.createNewLeftTree(data);
+				});
+			},
+			clicknode: function (node, b, c) {
+				this.currentNode = node;
+				this.currentNodeId = node.id;
+				this._requestRefManage(0);
+			},
+			_requestRefManage: function (param) {
+				var that = this;
+				var url = jasTools.base.rootPath + "/organizationAreaRef/getEnOrgRef.do";
+				var paramData = {
+					organizationId: this.currentNodeId
+				};
+				that.loading = true;
+				jasTools.ajax.get(url, paramData, function (data) {
+					that.tableData = data.data;
+				});
+
+			},
+			createNewLeftTree: function (treeData) {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jdbc/commonData/organizationAreaRef/getList.do";
+				jasTools.ajax.post(url, {
+					organizationType: "1"
+				}, function (data) {
+					treeData = that.formatTreeArr(treeData);
+					if (data && data.rows.length > 0) {
+						treeData = that.formatOrgArr(treeData, data)
+					}
+					that.orgnData = treeData;
+					that.$nextTick(function () {
+						if (!that.currentNodeId) {
+							that.currentNodeId = that.enOrgId;
+						}
+						that.$refs.orgtree.setCurrentKey(that.currentNodeId);
+						that._requestRefManage(0);
+					})
+				});
+			},
+			formatTreeArr: function (treeData) {
+				var that = this;
+				var newTreeData = [];
+				var formatter = function (arr) {
+					arr.forEach(function (item) {
+						if (item.id == that.enOrgId) { // 企业机构Id
+							newTreeData.push(item);
+
+						} else {
+							if (item.children) {
+								formatter(item.children);
+							}
+						}
+					})
+				};
+				formatter(treeData);
+				return newTreeData;
+			},
+			formatOrgArr: function (treeData, refData) {
+				var that = this;
+				var formatter = function (arr) {
+					arr.forEach(function (item) {
+						if (that._chargeFor(item.id, refData.rows)) {
+							item.color = "#009933";
+						}
+						if (item.children) {
+							formatter(item.children);
+						}
+					})
+				};
+				formatter(treeData);
+				return treeData;
+			},
+			_chargeFor: function (treeId, refData) {
+				var b = false;
+				for (var i = 0; i < refData.length; i++) {
+					if (treeId === refData[i].organizationId) {
+						b = true;
+						break;
+					}
+				}
+				return b;
+			},
+			createRef: function () {
+				var that = this;
+				var baseSrc = jasTools.base.rootPath +
+					'/jasmvvm/pages/module-privilege/org-area-ref-manage/dialogs/add-tree-ref.html';
+				var organizationName = "企业组织机构"
+				if (this.currentNode) {
+					organizationName = this.currentNode.text;
+				}
+				top.jasTools.dialog.show({
+					width: '600px',
+					height: '500px',
+					title: '行政区划配置',
+					src: baseSrc + '?organizationId=' + this.currentNodeId + "&organizationName=" + encodeURI(
+						organizationName),
+					cbForClose: function () {
+						that._requestRefManage(0);
+						that._requestTable();
+					}
+				});
+			},
+			deleteRef: function (row) {
+				var that = this;
+				var afterDelete = function () {
+					top.Vue.prototype.$message({
+						type: 'success',
+						message: '删除成功'
+					});
+					that._requestRefManage(0);
+					that._requestTable();
+				};
+				window.top.Vue.prototype.$confirm('您确定要删除吗？', '删除行政区划配置信息', {
+					type: 'warning',
+					callback: function (action) {
+						if (action === 'confirm') {
+							var url = jasTools.base.rootPath + "/jdbc/commonData/organizationAreaRef/delete.do";
+							jasTools.ajax.post(url, {
+								oid: row.oid
+							}, function (data) {
+								afterDelete();
+							});
+						}
+					}
+				});
+			},
+			getDetail: function (row) {
+				console.log(row)
+				var baseSrc = jasTools.base.rootPath +
+					'/jasmvvm/pages/module-privilege/org-area-ref-manage/dialogs/detail-ref.html';
+				var src = jasTools.base.setParamsToUrl(baseSrc, {
+					oid: row.oid
+				});
+				top.jasTools.dialog.show({
+					width: '800px',
+					height: '500px',
+					title: '行政区划配置详情',
+					src: src,
+				});
+			}
+		},
+	});
+</script>
+
+</html>

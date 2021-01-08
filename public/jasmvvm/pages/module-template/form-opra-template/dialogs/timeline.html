@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <link rel="stylesheet" href="./../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+  <link rel="stylesheet" href="./../../../../lib/element-ui/v2.13.2/theme-chalk/index.min.css">
+  <link rel="stylesheet" href="./../../../../common/css/main.css">
+</head>
+
+<body>
+  <div id="app" v-cloak>
+
+    <jas-dialog-wrapper>
+      <div>
+        <jas-base-group-title name="进度时间轴"></jas-base-group-title>
+        <el-timeline :reverse="reverse" style="margin-top:10px;">
+          <el-timeline-item v-for="(activity, index) in activities" :key="index" :timestamp="activity.timestamp">
+            {{activity.content}}
+          </el-timeline-item>
+        </el-timeline>
+      </div>
+      <div slot="footer">
+        <el-button size="small" @click="close">取 消</el-button>
+      </div>
+    </jas-dialog-wrapper>
+  </div>
+</body>
+<script src="./../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../lib/vue/vue.js"></script>
+<script src="./../../../../lib/element-ui/v2.13.2/index.min.js"></script>
+<script src="./../../../../common/components/jas-components.js "></script>
+<script src="./../../../../common/js/jas-tools.js"></script>
+<script>
+  var app = new Vue({
+    el: "#app",
+    data: function () {
+      return {
+        // reverse: false,
+        reverse: true,
+        activities: [],
+        oid: '',
+      }
+    },
+    created: function () { //先请求要展示的字段，再请求字段的详情，最后请求附件
+      var that = this;
+      var param = window.jasTools.base.getParamsInUrl(location.href);
+      that.oid = param.oid;
+    },
+    mounted: function () {
+      this.getLine();
+    },
+    methods: {
+      close: function () {
+        top.jasTools.dialog.close();
+      },
+      getLine: function () {
+        var that = this;
+        var url = jasTools.base.rootPath + "/bizSupervise/getProgressList.do";
+        jasTools.ajax.get(url, {
+          oid:that.oid
+        }, function (data) {
+          that.activities = data.data.map(function (item) {
+            return {
+              content: item.handOverProgress,
+              timestamp: item.reportDate
+            }
+          });
+        });
+
+      },
+    },
+  });
+</script>
+
+</html>

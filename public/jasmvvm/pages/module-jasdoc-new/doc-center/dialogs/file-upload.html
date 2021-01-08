@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Document</title>
+	<link rel="stylesheet" href="./../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+	<link rel="stylesheet" href="./../../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+	<link rel="stylesheet" href="./../../../../lib/vue-treeselect/vue-treeselect.min.css">
+	<link rel="stylesheet" href="./../../../../common/css/main.css">
+
+</head>
+
+<body>
+	<div id="app" v-cloak>
+		<jas-dialog-wrapper>
+			<jas-base-group-title name="选择文件"></jas-base-group-title>
+			<div style="text-align: center">
+
+				<el-upload ref="uploader" :on-exceed="limitNum" :on-error="errorUpload" class="upload-demo" drag
+					action="#" :http-request="uploadSectionFile" :limit="10" :multiple="true" :auto-upload="false">
+					<i class="el-icon-upload"></i>
+					<div class="el-upload__text">将文件拖到此处，或
+						<em>点击上传</em>
+					</div>
+					<div class="el-upload__tip" slot="tip">最多不能超过10个文件</div>
+				</el-upload>
+			</div>
+			<div slot="footer">
+				<el-button size="small" @click="cancel()">取 消</el-button>
+				<el-button size="small" type="primary" @click="upload('formData')">确 定</el-button>
+			</div>
+		</jas-dialog-wrapper>
+
+	</div>
+</body>
+<script src="./../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../lib/vue/vue.js"></script>
+<script src="./../../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../../lib/vue-treeselect/vue-treeselect.min.js"></script>
+<script src="./../../../../common/components/jas-components.js "></script>
+<script src="./../../../../common/js/jas-tools.js"></script>
+
+
+<script>
+	var app = new Vue({
+		el: "#app",
+		data: function () {
+			var that = this;
+			return {
+				lengthOfFileToSubmit: 0,
+				indexOfFileToSubmit: 1,
+				uploadUrl: jasTools.base.rootPath + '/jasdoc/folder/doccenter/uploadDoc.do',
+				paramsList: []
+				// fileList: [], //文件列表
+				// percentage: 0, //表示进度条
+			}
+		},
+		created: function () {
+			var that = this;
+			var param = window.jasTools.base.getParamsInUrl(location.href);
+			if (param.oid) {
+				this.oid = param.oid;
+			};
+		},
+		methods: {
+			cancel: function (param) {
+				window.parent.jasTools.dialog.close(param);
+
+			},
+			upload: function () {
+				var that = this;
+
+				that.uploadUrl = jasTools.base.setParamsToUrl(this.uploadUrl, {
+					token: localStorage.getItem('token'),
+					folderId: this.oid
+				});
+				this.$nextTick(function () {
+					var files = that.$refs.uploader.uploadFiles.filter(function (item) {
+						return !item.oid
+					});
+					that.lengthOfFileToSubmit = files.length;
+					that.indexOfFileToSubmit = 1;
+					if (files.length > 0) {
+						that.$refs.uploader.submit();
+					} else {
+						that.successUpload();
+					}
+				});
+			},
+			uploadSectionFile: function (params) {
+				var that = this;
+				if (that.indexOfFileToSubmit < that.lengthOfFileToSubmit) {
+					that.paramsList.push(params);
+				} else {
+					that.paramsList.push(params);
+					that.submitToServer(0);
+				}
+				that.indexOfFileToSubmit++;
+			},
+			submitToServer: function (index) {
+				var that = this;
+				if (index >= that.lengthOfFileToSubmit) {
+
+					that.cancel(1);
+					return;
+				} else {
+					var item = that.paramsList[index];
+					var file = item.file;
+					var formData = new FormData();
+					formData.append("file", file);
+					var url = jasTools.base.rootPath + "/nmpsp/jasdoc/uploadDoc.do?token=" + localStorage.getItem(
+						"token") + "&folderId=" + that.oid;
+					var xhr = new XMLHttpRequest();
+					xhr.open("post", url, true); //false同步  true异步  同步时无法监听
+					xhr.upload.addEventListener("progress", function (e) {
+						var percentage = Math.round((e.loaded * 100) / e.total);
+						item.onProgress({
+							percent: percentage
+						})
+
+					}, false); //监听上传进度
+					xhr.onload = function () {
+						index++;
+						that.submitToServer(index);
+					};
+					xhr.send(formData);
+				}
+			},
+			normalizer: function (node) {
+				return {
+					id: node.id,
+					label: node.text,
+					children: node.children,
+					isDefaultExpanded: true
+				}
+			},
+			limitNum: function () {
+				top.Vue.prototype.$message({
+					type: 'info',
+					message: '最多上传10个文件'
+				});
+			},
+			successUpload: function () {
+				var that = this;
+				that.indexOfFileToSubmit++;
+				if (that.indexOfFileToSubmit >= that.lengthOfFileToSubmit) {
+					top.Vue.prototype.$message({
+						type: 'success',
+						message: '上传成功'
+					});
+					that.cancel(1);
+				}
+
+			},
+			errorUpload: function (err, file, fileList) {
+				alert("文件上传失败");
+
+				// this.cancel(1);
+			}
+		},
+	});
+</script>
+
+</html>

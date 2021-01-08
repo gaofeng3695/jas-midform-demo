@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title></title>
+    <!-- <link rel="stylesheet" href="./libelement-ui/element-#0E2B4A/src/index.css"> -->
+    <link rel="stylesheet" href="./../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+    <link rel="stylesheet" href="./../../../lib/font-awesome-4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./../../../lib/vue-treeselect/vue-treeselect.min.css">
+
+    <link rel="stylesheet" href="./../../../common/css/main.css">
+    <link rel="stylesheet" href="./../../../common/css/element-reset.css">
+    <style>
+        .resizepanel {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .orgtitle {
+            height: 40px;
+            color: #fff;
+            background: #99c8f8;
+            line-height: 40px;
+            /* padding: 0 0 0 15px; */
+            text-align: center;
+        }
+
+        .orgtool {
+            height: 40px;
+            /* border-bottom:1px solid #e4e7ed; */
+            text-align: right;
+            padding: 0 10px;
+            overflow: hidden;
+        }
+
+        .content {
+            height: 100%;
+            padding: 0 10px 0px 10px;
+        }
+
+        .clearfix {
+            padding-bottom: 10px;
+
+        }
+
+        .subSearchWrapper {
+            /* padding-top: 0px !important; */
+        }
+
+        .searchWrapper {
+            overflow: unset !important;
+        }
+
+        .el-button+.el-button {
+            margin-left: 6px;
+        }
+
+        .vue-treeselect__control {
+            height: 34px;
+        }
+
+        .aletr_strong_title {
+            margin: 0.8em 0.2em;
+        }
+
+        .aletr_strong_file {
+            margin: 0.5em 1.8em;
+            color: #5269ab;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: left;
+        }
+
+        .aletr_strong_file>span {
+            color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" v-cloak v-loading="loading.allLoading">
+
+        <jas-two-panel-resizer layout="vertical" length="240px">
+            <template slot="closePanel">
+                <jas-base-module-title name="文件夹列表" style="margin-bottom: 10px;"></jas-base-module-title>
+
+                <el-tree class="is-grown" ref="orgtree" :data="folderTreeData" node-key="oid" :props="defaultProps"
+                    :default-expanded-keys="[currentNodeId]" highlight-current @node-click="clickNode"
+                    icon-class="fa fa-file" :expand-on-click-node="false" :default-expand-all="true">
+                    <span class="custom-tree-node" slot-scope="{ node, data }">
+                        <i class="fa fa-folder" style="color:#f5cd09;" aria-hidden="true"></i>
+                        <span>{{ node.label }}</span>
+                    </span>
+
+                </el-tree>
+            </template>
+            <div class="content" slot="mainPanel">
+                <div style="height:100%;">
+                    <div style="height:40px;border-bottom:1px solid #ececec;box-sizing: border-box;overflow: hidden">
+                        <div style="line-height:40px;float:left;padding-right:10px;">当前位置：</div>
+                        <el-breadcrumb separator-class="el-icon-arrow-right" style="line-height:40px;margin: 0 80px;">
+                            <el-breadcrumb-item :to="{}" @click.native="currentNodeId = item.id;"
+                                v-for="item in currentNodePath">
+                                {{formatNames(item.folderName)}}</el-breadcrumb-item>
+                        </el-breadcrumb>
+                        <el-button @click="currentNodeId = currentNodePath[currentNodePath.length-2].oid;"
+                            :disabled="currentNodePath.length < 2"
+                            style="position: absolute;margin-top: 4px;top: 0;right: 10px;" type="text" size="small">返回上级
+                        </el-button>
+                    </div>
+                    <div style="height:calc(100% - 40px);">
+                        <jas-list-wrapper ref="mylist" style="padding:0;">
+                            <div slot="search">
+                                <el-form class="jas-search-for-list" v-show="isContentSearch" label-width="120px">
+                                    <el-row v-show="!isClosed">
+                                        <el-col :xs="24" :sm="24" :md="12" :lg="8" :xl="6">
+                                            <el-form-item label="全文关键字" prop="searchStr" style="margin-bottom: 15px ">
+                                                <el-input v-model="searchStr" placeholder="请输入全文关键字" size="small"
+                                                    clearable></el-input>
+                                            </el-form-item>
+                                        </el-col>
+                                        <el-col :xs="24" :sm="24" :md="12" :lg="8" :xl="6" >
+                                            <el-form-item label="审核状态" prop="searchAuditState" v-if="strategyType==2"
+                                                style="margin-bottom: 15px ">
+                                                <el-select v-model="searchAuditState" placeholder="请选择审核状态" size="small"
+                                                    clearable style="width:100%;">
+                                                    <el-option v-for="item in statusOps" :key="item.value"
+                                                        :label="item.label" :value="item.value">
+                                                    </el-option>
+                                                </el-select>
+                                            </el-form-item>
+                                        </el-col>
+                                        <el-col :xs="24" :sm="btnSize_1.sm" :md="btnSize_1.md" :lg="btnSize_1.lg"
+                                            :xl="btnSize_1.xl">
+                                            <el-form-item style="float:right;margin-bottom: 0px;">
+                                                <el-tooltip class="item" content="切换到列表搜索" placement="top">
+                                                    <el-button size="small" type="text"
+                                                        @click="isContentSearch=!isContentSearch;resetTable()">
+                                                        切换</el-button>
+                                                </el-tooltip>
+                                                <el-button size="small" @click="resetTable()">重置</el-button>
+                                                <el-button size="small" type="primary" @click="querySearchByIndex()">查询
+                                                </el-button>
+                                            </el-form-item>
+                                        </el-col>
+                                    </el-row>
+                                </el-form>
+                                <el-form class="jas-search-for-list" v-show="!isContentSearch" :model="form"
+                                    label-width="120px">
+                                    <el-row v-show="!isClosed">
+                                        <el-col :xs="24" :sm="24" :md="12" :lg="8" :xl="6">
+                                            <el-form-item label="文档名称" prop="fileName" style="margin-bottom: 15px ">
+                                                <el-input v-model="form.fileName" :placeholder="'请输入'" size="small"
+                                                    clearable></el-input>
+                                            </el-form-item>
+                                        </el-col>
+                                        <el-col :xs="24" :sm="24" :md="12" :lg="8" :xl="6">
+                                            <el-form-item label="文档编号" prop="fileNo" style="margin-bottom: 15px ">
+                                                <el-input v-model="form.fileNo" :placeholder="'请输入文档编号'" size="small"
+                                                    clearable></el-input>
+                                            </el-form-item>
+                                        </el-col>
+                                        <el-col :xs="24" :sm="24" :md="12" :lg="8" :xl="6">
+                                            <el-form-item label="关键词" prop="keyWord" style="margin-bottom: 15px ">
+                                                <el-input v-model="form.keyWord" :placeholder="'请输入关键词'" size="small"
+                                                    clearable></el-input>
+                                            </el-form-item>
+                                        </el-col>
+                                        <el-col :xs="24" :sm="24" :md="12" :lg="8" :xl="6">
+                                            <el-form-item label="摘要" prop="summary" style="margin-bottom: 15px ">
+                                                <el-input v-model="form.summary" :placeholder="'请输入摘要'" size="small"
+                                                    clearable></el-input>
+                                            </el-form-item>
+                                        </el-col>
+                                        <el-col :xs="24" :sm="24" :md="12" :lg="8" :xl="6">
+                                            <el-form-item label="上传时间" prop="createDatetime"
+                                                style="margin-bottom: 15px ">
+                                                <el-date-picker size="small" v-model="form.createDatetime"
+                                                    type="daterange" value-format="yyyy-MM-dd HH:mm:ss"
+                                                    range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期"
+                                                    :default-time="['00:00:00','23:59:59']" style="width:100%;">
+                                                </el-date-picker>
+                                            </el-form-item>
+                                        </el-col>
+                                        <el-col :xs="24" :sm="24" :md="12" :lg="8" :xl="6">
+                                            <el-form-item label="备注" prop="remark" style="margin-bottom: 15px ">
+                                                <el-input v-model="form.remark" :placeholder="'请输入备注'" size="small"
+                                                    clearable></el-input>
+                                            </el-form-item>
+                                        </el-col>
+                                        <el-col :xs="24" :sm="btnSize.sm" :md="btnSize.md" :lg="btnSize.lg"
+                                            :xl="btnSize.xl">
+                                            <el-form-item style="float:right;margin-bottom: 0px;">
+                                                <el-tooltip class="item" content="切换到全文搜索" placement="top">
+                                                    <el-button size="small" type="text"
+                                                        @click="isContentSearch=!isContentSearch;resetTable()">
+                                                        切换</el-button>
+                                                </el-tooltip>
+                                                <el-button size="small" @click="resetTable()">重置</el-button>
+                                                <el-button size="small" type="primary" @click="queryDocByAttribute()">查询
+                                                </el-button>
+                                            </el-form-item>
+                                        </el-col>
+                                    </el-row>
+                                </el-form>
+                            </div>
+                            <div slot="list" class="jas-flex-box is-vertical is-grown">
+                                <div style="padding: 15px 0;">
+                                    <el-button size="small" plain type="primary" icon="fa fa-folder"
+                                        v-if="ifSystemFolder==0 && currentNodePrivilege>30"
+                                        @click="createNewFolder()">创建
+                                    </el-button>
+<!--                                     <el-button size="small" plain type="primary" icon="fa fa-folder"
+                                        v-if="folderParentId=='0' || (ifSystemFolder==0 && currentNodePrivilege>30)"
+                                        @click="createNewFolder()">创建
+                                    </el-button> -->
+                                    <el-button size="small" plain type="primary" icon="fa fa-file-text"
+                                        v-if="currentNodePath.length>1 && currentNodePrivilege>30"
+                                        @click="uploadFile()"> 上传</el-button>
+                                    <el-button size="small" plain type="primary" icon="fa fa-download"
+                                        :disabled="selectedRowOids.length==0" @click="downloadDocs">下载</el-button>
+                                    <!-- <el-button size="small" plain type="primary" icon="fa fa-hand-o-up"
+                                        :disabled="selectedFiles.length==0" v-if="currentNodePrivilege>30"
+                                        @click="moveFiles">移动</el-button> -->
+                                    <el-button size="small" plain type="primary" icon="fa fa-level-up"
+                                        :disabled="selectedAuditFiles.length==0" v-if="currentNodePrivilege>30"
+                                        @click="auditFiles">提交</el-button>
+                                    <el-button size="small" plain type="warning" icon="fa fa-trash-o"
+                                        :disabled="deleteFiles.length==0" v-if="currentNodePrivilege>30"
+                                        @click="deleteDoc">删除
+                                    </el-button>
+
+                                    <span class="fr">
+                                        <el-checkbox :disabled="isSearchMode" v-model="isALLFile"
+                                            style="margin-right: 10px;">显示所有文件
+                                        </el-checkbox>
+                                        <el-tooltip class="item" content="刷新" placement="top">
+                                            <el-button size="small" icon="el-icon-refresh" @click="requestTableData">
+                                            </el-button>
+                                        </el-tooltip>
+                                        <el-tooltip v-show="isClosed" class="item" content="展开搜索" placement="top">
+                                            <el-button size="small" icon="el-icon-arrow-down" @click="toggleSearch">
+                                            </el-button>
+                                        </el-tooltip>
+                                        <el-tooltip v-show="!isClosed" class="item" content="收起搜索" placement="top">
+                                            <el-button size="small" icon="el-icon-arrow-up" @click="toggleSearch">
+                                            </el-button>
+                                        </el-tooltip>
+                                    </span>
+                                </div>
+                                <div class="is-grown">
+                                    <el-table ref="mytable" @selection-change="handleSelectionChange"
+                                        @row-dblclick="openFile" @row-click="checkRow" v-loading="loading.list"
+                                        height="100%" :data="tableData" border :header-cell-style="headStyle"
+                                        style="width: 100%" stripe @sort-change="sortChange">
+                                        <el-table-column type="selection" width="55" align="center" fixed>
+                                        </el-table-column>
+                                        <el-table-column label="序号" type="index" align="center" width="50" fixed>
+                                        </el-table-column>
+                                        <el-table-column sortable="custom" label="名称" fixed prop="fileName"
+                                            min-width="170px" show-overflow-tooltip align="left" header-align="center">
+                                            <template slot-scope="scope">
+                                                <i v-if="scope.row.fileTypeCode == 1" class="fa fa-folder"
+                                                    style="color:#f5cd09;" aria-hidden="true"></i>
+                                                <!-- <i v-else class="fa fa-file" aria-hidden="true"></i> -->
+                                                <span>{{scope.row.fileName}}</span>
+                                            </template>
+                                        </el-table-column>
+                                        <el-table-column sortable="custom" label="编码" prop="fileNo" min-width="130px"
+                                            show-overflow-tooltip align="center">
+                                        </el-table-column>
+                                        <el-table-column sortable="custom" label="格式" prop="fileType" min-width="80px"
+                                            show-overflow-tooltip align="center">
+                                        </el-table-column>
+                                        <el-table-column sortable="custom" label="创建人" prop="createUserName"
+                                            min-width="100px" show-overflow-tooltip align="center">
+                                        </el-table-column>
+                                        <el-table-column sortable="custom" label="创建时间" prop="createDatetime"
+                                            min-width="130px" show-overflow-tooltip align="center">
+                                        </el-table-column>
+                                        <el-table-column sortable="custom" label="修改人" prop="modifyUserName"
+                                            min-width="100px" show-overflow-tooltip align="center">
+                                        </el-table-column>
+                                        <el-table-column sortable="custom" label="修改时间" prop="modifyDatetime"
+                                            min-width="130px" show-overflow-tooltip align="center">
+                                        </el-table-column>
+                                        <el-table-column sortable="custom" label="大小(kb)" prop="fileSize"
+                                            min-width="105px" show-overflow-tooltip align="center">
+                                        </el-table-column>
+                                        <el-table-column sortable="custom" label="文档位置" prop="fileLocation"
+                                            min-width="130px" show-overflow-tooltip align="center">
+                                        </el-table-column>
+                                        <el-table-column sortable="custom" label="审核状态" min-width="105px"
+                                            show-overflow-tooltip align="center" prop="auditState">
+                                            <template slot-scope="scope">
+                                                <el-tag v-if="scope.row.auditState==-1" type="danger" size="medium">已驳回
+                                                </el-tag>
+                                                <el-tag v-if="scope.row.auditState==0" type="info" size="medium">未提交
+                                                </el-tag>
+                                                <el-tag v-if="scope.row.auditState==1" type="warning" size="medium">审核中
+                                                </el-tag>
+                                                <el-tag v-if="scope.row.auditState==2" type="success" size="medium">审核通过
+                                                </el-tag>
+                                            </template>
+                                        </el-table-column>
+
+                                        <el-table-column label="操作" align="center" width="170" fixed="right">
+                                            <template slot-scope="scope">
+                                                <el-button type="text" size="small"
+                                                    v-if="scope.row.fileTypeCode == 2 && currentNodePrivilege>30"
+                                                    :disabled="scope.row.auditState==2 || scope.row.auditState==1"
+                                                    @click="privilegeFile(scope.row)">授权
+                                                </el-button>
+                                                <el-button @click="openFile(scope.row)"
+                                                    v-if="scope.row.fileTypeCode == 1" type="text" size="small">打开
+                                                </el-button>
+                                                <el-button @click="previewFile(scope.row)"
+                                                    v-if="scope.row.fileTypeCode == 2" type="text" size="small">预览
+                                                </el-button>
+                                                <el-button type="text" size="small" @click="detailRow(scope.row)">详情
+                                                </el-button>
+                                                <el-button type="text" size="small"
+                                                    :disabled="scope.row.auditState==2 || scope.row.auditState==1"
+                                                    v-if="currentNodePrivilege>30" @click="editRow(scope.row)">修改
+                                                </el-button>
+                                            </template>
+                                        </el-table-column>
+                                    </el-table>
+                                </div>
+                                <div class="clearfix">
+                                    <el-pagination class="fr" @size-change="handleSizeChange"
+                                        @current-change="handleCurrentChange" :current-page="currentPage"
+                                        :page-sizes="[10, 20, 50, 100]" :page-size="pageSize"
+                                        layout="total, sizes, prev, pager, next, jumper" :total="total">
+                                    </el-pagination>
+                                </div>
+
+                            </div>
+                        </jas-list-wrapper>
+                    </div>
+                </div>
+            </div>
+        </jas-two-panel-resizer>
+
+
+
+
+    </div>
+</body>
+
+<script src="./../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../lib/vue/vue.js"></script>
+<script src="./../../../lib/vue-multipane/vue-multipane.js"></script>
+
+<script src="./../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../common/components/jas-components.js"></script>
+<script src="./../../../lib/vue-treeselect/vue-treeselect.min.js"></script>
+
+<script src="./../../../common/js/jas-tools.js"></script>
+<script>
+    /**
+     * created by GF on 2018.12.14
+     */
+    /**
+     * 权限控制：
+     * 20：查看
+     * 30：
+     * 60：
+     * 90：
+     */
+
+
+    var vm = new Vue({
+        el: '#app',
+        data: function () {
+            return {
+                total: 1,
+                pageSize: 10,
+                currentPage: 1,
+                loading: {
+                    allLoading: false,
+                    list: false,
+                    scopeTree: false,
+                },
+                isSearchMode: false,
+                isALLFile: false,
+                selectedRows: [],
+                selectedRowOids: [],
+                selectedFiles: [],
+                selectedAuditFiles: [],
+                deleteFiles: [],
+                tableData: [],
+                folderTreeData: [],
+                currentNode: '',
+                currentNodeId: '',
+                currentNodePath: [],
+                defaultProps: {
+                    label: 'folderName',
+                    children: 'children'
+                },
+                headStyle: {
+                    'background-color': '#f5f7fa ',
+                },
+                isClosed: false,
+                btnSize: {
+                    sm: 0,
+                    md: 0,
+                    lg: 0,
+                    xl: 0,
+                },
+                btnSize_1: {
+                    sm: 0,
+                    md: 0,
+                    lg: 0,
+                    xl: 0,
+                },
+                searchStr: '',
+                isContentSearch: true,
+                form: {},
+                currentNodePrivilege: 30,
+                privilegeCode: '',
+                ifSystemFolder: 1,
+                folderParentId: '0',
+                sortName: null,
+                sortOrder: null,
+                statusOps: [{
+                    label: "未提交",
+                    value: "0"
+                }, {
+                    label: "待审核",
+                    value: "1"
+                }, {
+                    label: "审核通过",
+                    value: "2"
+                }, {
+                    label: "审核不通过",
+                    value: "-1"
+                }],
+                searchAuditState: "",
+                strategyType: "1",
+                orderBy: null,
+                ifSearchQuery: false
+
+            }
+        },
+        computed: {
+
+        },
+        watch: {
+            currentNodeId: function () {
+                this.requestTableData();
+                this.currentNodePath = this.$refs.orgtree.getNodePath(this.currentNodeId);
+                this.currentNode = this.currentNodePath[this.currentNodePath.length - 1];
+                this.$refs.orgtree.setCurrentKey(this.currentNodeId);
+                this.currentNodePrivilege = this.currentNode.privilegeType;
+                this.ifSystemFolder = this.currentNode.ifSystem;
+                this.folderParentId = this.currentNode.parentId;
+                this.strategyType = this.currentNode.strategyType;
+            },
+            isALLFile: function () {
+                this.requestTableData();
+            },
+            selectedRows: function () {
+                var that = this;
+                that.selectedRowOids = [];
+                that.deleteFiles = [];
+                that.selectedFiles = [];
+                that.selectedAuditFiles = [];
+                var ifAudit = true;
+                var ifMove = true;
+                var ifDeleteDoc = true;
+                this.selectedRows.forEach(function (item) {
+                    that.selectedRowOids.push({
+                        "oid": item.oid,
+                        "type": item.fileTypeCode,
+                        "name": item.fileName
+                    });
+                    if (item.folderPrivilege == 30 || item.auditState == 2 || item.auditState == 1) {
+                        ifDeleteDoc = false;
+                        that.deleteFiles = [];
+                    } else {
+                        that.deleteFiles.push({
+                            "oid": item.oid,
+                            "type": item.fileTypeCode,
+                            "name": item.fileName
+                        });
+                    }
+                    if (item.fileTypeCode == 2) {
+                        that.selectedFiles.push({ "oid": item.oid, "name": item.fileName });
+                        if (item.auditState == 0 || item.auditState == -1) {
+                            that.selectedAuditFiles.push(item.oid)
+                        } else {
+                            that.selectedAuditFiles = [];
+                            ifAudit = false;
+                            ifMove = false;
+                        }
+                    } else {
+                        ifAudit = false;
+                        that.selectedAuditFiles = [];
+                    }
+                });
+                if (!ifAudit) {
+                    that.selectedAuditFiles = [];
+                }
+                if (!ifDeleteDoc) {
+                    that.deleteFiles = [];
+                }
+            }
+        },
+        mounted: function () {
+
+        },
+        created: function () {
+            var param = window.jasTools.base.getParamsInUrl(location.href);
+            this.privilegeCode = param.privilegeCode;
+            this.requestTreeNode(false);
+            this.setFieldsPattern();
+        },
+        methods: {
+            requestTreeNode: function (refresh) {
+                var that = this;
+                // var url = jasTools.base.rootPath + "/treeView/nmpspDocFolder/getTreeView.do";
+                var url = jasTools.base.rootPath + "/serviceMvc/nmpspDoc/queryJasDocTree.do";
+                jasTools.ajax.post(url, { "privilegeCode": that.privilegeCode }, function (data) {
+                    // that.folderTreeData = data.rows;
+                    that.folderTreeData = data.data;
+                    if (refresh) {
+                        that.requestTableData();
+                        that.$nextTick(function () {
+                            that.$refs.orgtree.setCurrentKey(that.currentNodeId);
+                        });
+                    } else {
+                        that.$nextTick(function () {
+                            if (!that.currentNodeId) {
+                                that.currentNodeId = that.folderTreeData[0].oid;
+                                that.currentNodePrivilege = that.folderTreeData[0].privilegeType;
+                            }
+                        });
+                    }
+                });
+            },
+            clickNode: function (data) {
+                var that = this;
+                that.currentNodeId = data.oid;
+                that.currentNodePrivilege = data.privilegeType;
+            },
+            requestTableData: function () {
+                var that = this;
+                var url = jasTools.base.rootPath + "/jdbc/commonData/nmpspFileAndFolder/getPage.do";
+                var param = {
+                    "folderId": that.currentNodeId,
+                    "pageSize": that.pageSize,
+                    "pageNo": that.currentPage,
+                    "allOrOnlyDocFile": that.isALLFile,
+                    "privilegeCode": that.privilegeCode,
+                    "sortOrder": that.sortOrder,
+                    "sortName": that.sortName,
+                    "orderBy": that.orderBy
+                }
+                that.loading.list = true;
+                jasTools.ajax.post(url, param, function (data) {
+                    that.tableData = data.rows;
+                    that.loading.list = false;
+                    that.setFieldsPattern_1();
+                });
+
+            },
+            resetTable: function () {
+                var that = this;
+                that.pageSize = 10;
+                that.currentPage = 1;
+                that.searchStr = '';
+                that.form = {};
+                that.ifSearchQuery = false;
+                that.requestTableData();
+            },
+            querySearchByIndex: function () {
+                var that = this;
+                var url = jasTools.base.rootPath + "/nmpsp/jasdoc/querySearchByIndex.do";
+                that.ifSearchQuery = true;
+                that.loading.list = true;
+                jasTools.ajax.post(url, {
+                    "searchString": that.searchStr,
+                    "folderId": that.currentNodeId,
+                    "pageNo": that.currentPage,
+                    "pageSize": that.pageSize,
+                    "privilegeCode": that.privilegeCode,
+                    "searchAuditState": that.searchAuditState,
+                    "sortOrder": that.sortOrder,
+                    "sortName": that.sortName,
+                }, function (data) {
+                    that.tableData = data.rows;
+                    that.loading.list = false;
+                });
+            },
+            queryDocByAttribute: function () {
+                var that = this;
+                if (JSON.stringify(that.form) != "{}") {
+                    var url = jasTools.base.rootPath + "/jdbc/commonData/nmpspDocAttribute/getPage.do";
+                    var param = {
+                        "folderId": that.currentNodeId,
+                        "pageSize": that.pageSize,
+                        "pageNo": that.currentPage,
+                        "fileName": that.form.fileName,
+                        "fileNo": that.form.fileNo,
+                        "keyWord": that.form.keyWord,
+                        "summary": that.form.summary,
+                        "createDatetime": that.form.createDatetime,
+                        "remark": that.form.remark,
+                        "privilegeCode": that.privilegeCode
+                    }
+                    that.loading.list = true;
+                    jasTools.ajax.post(url, param, function (data) {
+                        that.tableData = data.rows;
+                        that.loading.list = false;
+                    });
+                }
+            },
+            uploadFile: function () {
+                var that = this;
+                var baseSrc = jasTools.base.rootPath + '/jasmvvm/pages/module-jasdoc-new/doc-center/dialogs/file-upload.html';
+                top.jasTools.dialog.show({
+                    width: '600px',
+                    height: '600px',
+                    title: '上传文件',
+                    src: baseSrc + '?oid=' + that.currentNodeId,
+                    cbForClose: function (param) {
+                        if (param == 1) {
+                            that.requestTableData();
+                        }
+                    }
+                });
+            },
+            createNewFolder: function () {
+                var that = this;
+                var baseSrc = jasTools.base.rootPath + '/jasmvvm/pages/module-jasdoc-new/doc-center/dialogs/folder-edit.html';
+                top.jasTools.dialog.show({
+                    width: '600px',
+                    height: '50%',
+                    title: '创建文件夹',
+                    src: baseSrc + '?parentId=' + this.currentNodeId,
+                    cbForClose: function () {
+                        that.requestTreeNode(true);
+                    }
+                });
+            },
+            editRow: function (row) {
+                console.log(row);
+                var that = this;
+                if (row.fileTypeCode == 1) {//文件夹
+                    var baseSrc = jasTools.base.rootPath + '/jasmvvm/pages/module-jasdoc-new/doc-center/dialogs/folder-edit.html';
+                    top.jasTools.dialog.show({
+                        width: '600px',
+                        height: '50%',
+                        title: '修改文件夹',
+                        src: baseSrc + '?oid=' + row.oid,
+                        cbForClose: function () {
+                            that.requestTreeNode(true);
+                        }
+                    });
+                } else {
+                    var baseSrc = jasTools.base.rootPath + '/jasmvvm/pages/module-jasdoc-new/doc-center/dialogs/file-edit.html';
+                    top.jasTools.dialog.show({
+                        width: '60%',
+                        height: '80%',
+                        title: '文档修改',
+                        src: baseSrc + '?oid=' + row.oid,
+                        cbForClose: function () {
+                            that.requestTreeNode(true);
+                        }
+                    });
+                }
+
+            },
+            detailRow: function (row) {
+                var that = this;
+                var src;
+                if (row.fileTypeCode == 1) { //文件夹
+                    var baseSrc = jasTools.base.rootPath + '/jasmvvm/pages/module-jasdoc-new/doc-center/dialogs/detail.html';
+                    src = jasTools.base.setParamsToUrl(baseSrc, {
+                        oid: row.oid,
+                        pageCode: 'folder'
+                    });
+                    var title = '文件夹详情'
+                } else { //文件
+                    var baseSrc = jasTools.base.rootPath + '/jasmvvm/pages/module-jasdoc-new/doc-center/dialogs/detail-privilege.html';
+                    var folderId = that.currentNode.ifSystem == 0 ? that.currentNodeId : "system_id";
+                    src = jasTools.base.setParamsToUrl(baseSrc, {
+                        oid: row.oid,
+                        pageCode: 'file',
+                        fileName: row.fileName,
+                        folderId: folderId
+                    });
+                    var title = '文件详情'
+                }
+                top.jasTools.dialog.show({
+                    width: '60%',
+                    height: '80%',
+                    title: title,
+                    src: src,
+                });
+            },
+            previewFile: function (row) {
+                var that = this;
+                if (['jpg', 'png', 'gif'].indexOf(row.fileType.toLocaleLowerCase()) > -1) {
+                    var src = jasTools.base.setParamsToUrl(jasTools.base.rootPath + '/nmpsp/jasdoc/downloadDoc.do', {
+                        oid: row.oid,
+                        token: localStorage.getItem('token'),
+                    });
+                    return top.jasTools.base.viewImg(src);
+                }
+                var url = jasTools.base.rootPath + "/nmpsp/jasdoc/isExistPdfFile.do";
+                jasTools.ajax.postForm(url, {
+                    oid: row.oid,
+                }, function (data) {
+                    if (data.data == 1) {
+                        var baseSrc = jasTools.base.rootPath + '/jasmvvm/pages/module-pdf-viewer/web/viewer.html';
+                        top.jasTools.dialog.show({
+                            width: '80%',
+                            height: '90%',
+                            title: '文件预览',
+                            src: baseSrc + '?oid=' + row.oid + '&isNmpsp=true',
+                        });
+                    } else {
+                        if (data.data == 2) {
+                            top.Vue.prototype.$message({
+                                type: 'info',
+                                message: '预览文件正在转换，请稍等再试...'
+                            });
+                        } else {
+                            top.Vue.prototype.$message({
+                                type: 'error',
+                                message: '文件已丢失'
+                            });
+                        }
+
+                    }
+                }, function () {
+                    top.Vue.prototype.$message({
+                        type: 'error',
+                        message: '文件已丢失'
+                    });
+                });
+            },
+            downloadDocs: function () {
+                var that = this;
+                if (that.selectedRowOids.length == 1 && that.selectedRowOids[0].type == 2) {
+                    var baseUrl = jasTools.base.rootPath + "/nmpsp/jasdoc/downloadDoc.do";
+                    var downloadUrl = jasTools.base.setParamsToUrl(baseUrl, {
+                        oid: that.selectedRowOids[0].oid
+                    });
+                    jasTools.ajax.downloadByIframe('POST', downloadUrl);
+                } else {
+                    var fileName;
+                    if (that.selectedRowOids.length == 1) {
+                        fileName = that.selectedRowOids[0].name;
+                    } else {
+                        fileName = that.currentNode.folderName;
+                    }
+                    var fileIds = [];
+                    var folderIds = [];
+                    that.selectedRowOids.forEach(function (item) {
+                        if (item.type == 1) {
+                            folderIds.push(item.oid);
+                        }
+                        if (item.type == 2) {
+                            fileIds.push(item.oid);
+                        }
+                    });
+                    var url = jasTools.base.rootPath + "/nmpsp/jasdoc/compressionDocs.do";
+                    jasTools.ajax.post(url, {
+                        "fileIds": fileIds,
+                        "fileName": fileName,
+                        "folderIds": folderIds,
+                        "privilegeCode": that.privilegeCode
+                    }, function (data) {
+                        if (data.success == 0) {
+                            top.Vue.prototype.$message({
+                                type: 'error',
+                                message: data.error || '文件已丢失'
+                            });
+                        } else {
+                            var baseUrl = jasTools.base.rootPath + "/nmpsp/jasdoc/downloadDocs.do";
+                            var downloadUrl = jasTools.base.setParamsToUrl(baseUrl, {
+                                fileName: data.data
+                            });
+                            jasTools.ajax.downloadByIframe('POST', downloadUrl);
+                        }
+                    });
+                }
+            },
+            deleteDoc: function () {
+                var that = this;
+                var fileIds = [];
+                var folderIds = [];
+                that.deleteFiles.forEach(function (item) {
+                    if (item.type == 1) {
+                        folderIds.push(item.oid);
+                    }
+                    if (item.type == 2) {
+                        fileIds.push(item.oid);
+                    }
+                });
+                window.top.Vue.prototype.$confirm('您确定要删除吗？', '删除文件', {
+                    type: 'warning',
+                    callback: function (action) {
+                        if (action === 'confirm') {
+                            var url = jasTools.base.rootPath + "/nmpsp/jasdoc/deleteDoc.do";
+                            jasTools.ajax.post(url, {
+                                "fileIds": fileIds,
+                                "folderIds": folderIds,
+                                "privilegeCode": that.privilegeCode
+                            }, function (data) {
+                                top.Vue.prototype.$message({
+                                    type: 'success',
+                                    message: '删除成功'
+                                });
+                                that.requestTreeNode(true);
+                            });
+                        }
+                    }
+                });
+            },
+            moveFiles: function () {
+                var that = this;
+                var baseSrc = jasTools.base.rootPath + '/jasmvvm/pages/module-jasdoc-new/doc-center/dialogs/file-move.html';
+                var fileName = [];
+                var oids = [];
+                this.selectedFiles.forEach(function (item) {
+                    fileName.push(item.name);
+                    oids.push(item.oid);
+                });
+                var url = jasTools.base.setParamsToUrl(baseSrc, {
+                    oids: oids.join(','),
+                    fileNames: fileName.join(','),
+                });
+                top.jasTools.dialog.show({
+                    width: '600px',
+                    height: '600px',
+                    title: '文件移动',
+                    src: url,
+                    cbForClose: function () {
+                        that.requestTreeNode(true);
+                    }
+                });
+            },
+            privilegeFile: function (row) {
+                var that = this;
+                var folderId = that.currentNode.ifSystem == 0 ? that.currentNodeId : "system_id";
+                var baseSrc = jasTools.base.rootPath + '/jasmvvm/pages/module-jasdoc-new/doc-center/dialogs/file-privilege.html';
+                var src = jasTools.base.setParamsToUrl(baseSrc, {
+                    oid: row.oid,
+                    fileName: row.fileName,
+                    folderId: folderId
+                });
+                top.jasTools.dialog.show({
+                    width: '40%',
+                    height: '80%',
+                    title: "文件授权",
+                    src: src,
+                    cbForClose: function () {
+                        that.requestTableData();
+                    }
+                });
+            },
+            auditFiles: function () {
+                var that = this;
+                var url = jasTools.base.rootPath + "/nmpsp/jasdoc/ifGivePrivilege.do";
+                jasTools.ajax.post(url, { "fileIds": that.selectedAuditFiles }, function (data) {
+                    if (data.rows.length > 0) {
+                        var htmlStrong = "<div class='aletr_strong_title'>以下文件没有分配权限：</div>" +
+                            "    <div>";
+
+                        data.rows.forEach(function (obj, index) {
+                            htmlStrong += "<div class='aletr_strong_file' title='" + obj.fileName + "'><span>" + (index + 1) + "、</span>" + obj.fileName + "</div>";
+                        });
+                        htmlStrong += "    </div>";
+                        that.$alert(htmlStrong, '错误提示', {
+                            confirmButtonText: "确定",
+                            dangerouslyUseHTMLString: true
+                        });
+                    } else {
+                        var baseUrl = jasTools.base.rootPath + "/nmpsp/jasdoc/auditFile.do"
+                        jasTools.ajax.post(baseUrl, {
+                            "fileIds": that.selectedAuditFiles,
+                            "auditState": 1
+                        }, function (data) {
+                            top.Vue.prototype.$message({
+                                type: 'success',
+                                message: '提交成功'
+                            });
+                            that.requestTableData();
+                        });
+                    }
+                });
+            },
+            openFile: function (row) {
+                var that = this;
+                if (row.fileTypeCode == 1) { //文件夹
+                    that.currentNodeId = row.oid;
+                } else {//文件
+                    that.previewFile(row);
+                }
+            },
+            sortChange: function (column, prop, order) {
+                var that = this;
+                this.sortName = column.prop || '';
+                this.sortOrder = column.order === 'ascending' ? 'asc' : 'desc';
+                this.sortOrder = column.prop ? this.sortOrder : '';
+                this.orderBy = this.sortName + " " + this.sortOrder
+                if (that.ifSearchQuery) {
+                    that.querySearchByIndex();
+                } else {
+                    that.requestTableData();
+                }
+            },
+            checkRow: function (row, event, column) {
+            },
+            handleSelectionChange: function (selects) {
+                this.selectedRows = selects;
+            },
+            handleSizeChange: function (val) {
+                this.pageSize = val;
+                this.requestTableData();
+            },
+            handleCurrentChange: function (val) {
+                this.currentPage = val;
+            },
+            toggleSearch: function () {
+                this.$refs['mylist'].toggleSearch();
+                this.isClosed = this.$refs['mylist'].isClosed;
+            },
+            formatNames: function (name) {
+                if (name.length > 10) return name.slice(0, 10) + '..';
+                return name;
+            },
+            setFieldsPattern: function () {
+                var nFields = 6;
+                this.btnSize.sm = 24 - (24 * nFields) % 24;
+                this.btnSize.md = 24 - (12 * nFields) % 24;
+                this.btnSize.lg = 24 - (8 * nFields) % 24;
+                this.btnSize.xl = 24 - (6 * nFields) % 24;
+            },
+            setFieldsPattern_1: function () {
+                var nFields = 4;
+                if(this.strategyType == 2){
+                	nFields = 8;
+                }
+                this.btnSize_1.sm = 24 - (24 * nFields) % 24;
+                this.btnSize_1.md = 24 - (12 * nFields) % 24;
+                this.btnSize_1.lg = 24 - (8 * nFields) % 24;
+                this.btnSize_1.xl = 24 - (6 * nFields) % 24;
+            },
+        }
+    });
+</script>
+
+</html>

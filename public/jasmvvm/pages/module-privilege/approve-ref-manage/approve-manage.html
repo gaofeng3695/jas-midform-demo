@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>企业审批配置</title>
+	<link rel="stylesheet" href="./../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+	<link rel="stylesheet" href="./../../../lib/font-awesome-4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="./../../../common/css/main.css">
+	<link rel="stylesheet" href="./../../../common/css/element-reset.css">
+	<style>
+		.resizepanel {
+			overflow-x: hidden;
+			overflow-y: auto;
+		}
+
+		.orgtitle {
+			height: 40px;
+			color: #fff;
+			background: #409EFF;
+			line-height: 40px;
+			text-align: center;
+		}
+
+		.orgtool {
+			height: 40px;
+			text-align: right;
+			padding: 0 10px;
+			overflow: hidden;
+		}
+
+		.filterwrap {
+			padding: 10px 10px 0px 10px;
+		}
+
+		.content {
+			height: 100%;
+			padding: 0 10px;
+		}
+
+		.content .el-tabs__content {
+			width: 100%;
+			-webkit-box-flex: 1;
+			-ms-flex: 1;
+			flex: 1;
+			overflow: auto;
+		}
+
+		.searchWrapper {
+			overflow: unset !important;
+		}
+
+		.foo {
+			box-sizing: border-box;
+			padding: 0px 10px 10px 10px;
+		}
+
+		#pane-approveRef {
+			height: 100%
+		}
+
+		#pane-approveRef>div:first-child {
+			height: 100%
+		}
+
+		.resizepanel {
+			display: flex;
+			flex-direction: column;
+			overflow: hidden !important;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app" v-cloak v-loading="loading.allLoading">
+
+		<jas-two-panel-resizer layout="vertical" length="47%">
+			<template slot="closePanel">
+				<div class="filterwrap">
+					<el-input prefix-icon="el-icon-search" size="small" placeholder="输入关键字进行过滤" v-model="filterText" clearable>
+					</el-input>
+				</div>
+				<div style="flex:1;overflow: auto;">
+					<el-tree class="is-grown" ref="orgtree" :data="orgnData" node-key="id" default-expand-all
+						:props="defaultProps" :default-expanded-keys="[currentNodeId]" highlight-current @node-click="clicknode"
+						:expand-on-click-node="false" :filter-node-method="filterNode" :render-content="renderContent"></el-tree>
+				</div>
+			</template>
+			<div class="content" slot="mainPanel">
+				<el-tabs v-model="activeName" class="jas-flex-box" style="height:100%;overflow: hidden">
+					<el-tab-pane label="企业审批配置管理" name="approveRef">
+						<div v-loading="loading.approveRefManage">
+							<div style="height:100%;">
+								<div slot="list" class="jas-flex-box is-vertical is-grown">
+									<div style="padding: 5px 0 15px 0;">
+										<el-button @click="createRef" size="small" plain type="primary" icon="fa fa-plus"
+											:disabled="!currentNodeId">新增</el-button>
+										<span class="fr">
+											<el-tooltip class="item" content="刷新" placement="top">
+												<el-button size="small" icon="el-icon-refresh" @click="_requestRefManage"></el-button>
+											</el-tooltip>
+										</span>
+									</div>
+									<div class="is-grown">
+										<el-table ref="mytable" @selection-change="handleSelectionChange" @row-dblclick="getDetail"
+											@row-click="checkRow" height="100%" :data="tableData" border :header-cell-style="headStyle"
+											style="width: 100%" stripe>
+											<el-table-column label="审批企业" prop="approveEnterpriseName" min-width="70px" show-overflow-tooltip
+												align="center">
+											</el-table-column>
+											<el-table-column label="操作" align="center" width="135" fixed="right">
+												<template slot-scope="scope">
+													<el-button @click="getDetail(scope.row)" type="text" size="small">详情</el-button>
+													<el-button @click="editRef(scope.row)" type="text" size="small">修改</el-button>
+													<el-button @click="deleteRef(scope.row)" type="text" size="small">删除</el-button>
+												</template>
+											</el-table-column>
+										</el-table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</el-tab-pane>
+				</el-tabs>
+			</div>
+		</jas-two-panel-resizer>
+	</div>
+</body>
+
+<script src="./../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../lib/vue/vue.js"></script>
+<script src="./../../../lib/vue-multipane/vue-multipane.js"></script>
+
+<script src="./../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../common/components/jas-components.js"></script>
+<script src="./../../../common/js/jas-tools.js"></script>
+<script>
+	var vm = new Vue({
+		el: '#app',
+		data: function () {
+			return {
+				headStyle: {
+					'background-color': '#f5f7fa ',
+				},
+				loading: {
+					approveRefManage: true
+				},
+				panelMoving: false,
+				panelShowed: true,
+				activeName: 'approveRef',
+				filterText: '',
+				currentNode: '',
+				currentNodeId: '',
+				orgnData: [],
+				defaultProps: {
+					label: 'text',
+					orgnData: 'orgnData'
+				},
+				isClosed: false,
+				form: {},
+				btnSize: {
+					sm: 0,
+					md: 0,
+					lg: 0,
+					xl: 0,
+				},
+				isEditMode: false,
+				selectedRowOids: [],
+				selectedRows: [],
+				tableData: [],
+				isMultiProject: true,
+				isMulti: null,
+				enOrgId: "f4b587f5-4f84-4e51-9ae7-529a7f16b2f6"
+			}
+		},
+		computed: {
+			isFixed: function () {
+				var arr = [
+					'e8109332-8a6e-4d16-8e73-549154818205',
+					'8432ae89-470e-4fb9-a351-f0f48eff5548',
+					'46b894cd-714c-4af8-8cf1-f3ea2db01a62',
+					'b7e5ff3c-8e3a-4bd7-89d0-d45189f8c2a6',
+					'29248863-3583-4b64-915c-c1472e87fba7',
+				];
+				return (arr.indexOf(this.currentNodeId) > -1);
+
+			},
+		},
+		watch: {
+			filterText: function (val) {
+				this.$refs.orgtree.filter(val);
+			},
+			selectedRows: function () {
+				var selects = [];
+				this.selectedRows.forEach(function (item) {
+					selects.push(item.oid);
+				});
+				this.selectedRowOids = selects;
+			},
+		},
+		mounted: function () {
+			var isMulti = sessionStorage.getItem("multiProject");
+			if (isMulti == 1) {
+				this.isMultiProject = false;
+			} else {
+				this.isMultiProject = false;
+			}
+
+			this._requestTable();
+			this.setFieldsPattern();
+		},
+		created: function () {
+			var that = this;
+			var param = window.jasTools.base.getParamsInUrl(location.href);
+			if (param.isEditMode) {
+				this.isEditMode = true;
+			} else {
+				this.isEditMode = false;
+			}
+			var isMultiProject = sessionStorage.getItem("multiProject");
+			if (isMultiProject == "1") {
+				that.isMulti = true;
+			}
+
+		},
+		methods: {
+			filterNode: function (value, data) {
+				if (!value) return true;
+				return data.text.indexOf(value) !== -1;
+			},
+			_requestTable: function () {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jasframework/privilege/unit/getLeftTree.do?isroot=true";
+				jasTools.ajax.get(url, {}, function (data) {
+					that.createNewLeftTree(data);
+				});
+			},
+			clicknode: function (node, b, c) {
+				this.currentNode = node;
+				this.currentNodeId = node.id;
+				this._requestRefManage(0);
+			},
+
+			setFieldsPattern: function () {
+				var nFields = 3;
+				this.btnSize.sm = 24 - (24 * nFields) % 24;
+				this.btnSize.md = 24 - (12 * nFields) % 24;
+				this.btnSize.lg = 24 - (6 * nFields) % 24;
+				this.btnSize.xl = 24 - (6 * nFields) % 24;
+			},
+
+			_requestRefManage: function (param) {
+				var that = this;
+				var unitId = this.currentNodeId;
+				var url = jasTools.base.rootPath + "/jdbc/commonData/approveEnterpriseRef/getList.do";
+				var paramData = {
+					currentEnterpriseId: unitId
+				};
+				that.loading = true;
+				jasTools.ajax.post(url, paramData, function (data) {
+					that.tableData = data.rows;
+				});
+
+			},
+			createNewLeftTree: function (treeData) {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jdbc/commonData/approveEnterpriseRef/getList.do";
+				jasTools.ajax.post(url, {}, function (data) {
+					treeData = that.formatTreeArr(treeData)
+					if (data && data.rows.length > 0) {
+						treeData = that.formatOrgArr(treeData, data)
+					}
+					that.orgnData = treeData;
+					that.$nextTick(function () {
+						if (!that.currentNodeId) {
+							that.currentNodeId = that.enOrgId;
+						}
+						that.$refs.orgtree.setCurrentKey(that.currentNodeId);
+						that._requestRefManage(0);
+					})
+				});
+			},
+			formatTreeArr: function (treeData) {
+				var that = this;
+				var newTreeData = [];
+				var formatter = function (arr) {
+					arr.forEach(function (item) {
+						if (item.id == that.enOrgId) { // 企业机构Id
+							newTreeData.push(item);
+
+						} else {
+							if (item.children) {
+								formatter(item.children);
+							}
+						}
+					})
+				};
+				formatter(treeData);
+				return newTreeData;
+			},
+			formatOrgArr: function (treeData, refData) {
+				var that = this;
+				var formatter = function (arr) {
+					arr.forEach(function (item) {
+						if (that._chargeFor(item.id, refData.rows)) {
+							item.text = "【已配置】" + item.text;
+						}
+						if (item.children) {
+							formatter(item.children);
+						}
+					})
+				};
+				formatter(treeData);
+				return treeData;
+			},
+			_chargeFor: function (treeId, refData) {
+				var b = false;
+				for (var i = 0; i < refData.length; i++) {
+					if (treeId === refData[i].currentEnterpriseId) {
+						b = true;
+						break;
+					}
+				}
+				return b;
+			},
+			createRef: function () {
+				var that = this;
+				var baseSrc = jasTools.base.rootPath +
+					'/jasmvvm/pages/module-privilege/approve-ref-manage/dialogs/add-ref.html';
+				top.jasTools.dialog.show({
+					width: '800px',
+					height: '500px',
+					title: '新建审批企业',
+					src: baseSrc + '?pid=' + this.currentNodeId,
+					cbForClose: function () {
+						that._requestRefManage(0);
+						that._requestTable();
+					}
+				});
+			},
+			editRef: function (row) {
+				var that = this;
+				var baseSrc = jasTools.base.rootPath +
+					'/jasmvvm/pages/module-privilege/approve-ref-manage/dialogs/add-ref.html';
+				top.jasTools.dialog.show({
+					width: '800px',
+					height: '500px',
+					title: '修改审批企业',
+					src: baseSrc + '?oid=' + row.oid,
+					cbForClose: function () {
+						that._requestRefManage(0);
+						that._requestTable();
+					}
+				});
+			},
+			deleteRef: function (row) {
+				var that = this;
+				var afterDelete = function () {
+					top.Vue.prototype.$message({
+						type: 'success',
+						message: '删除成功'
+					});
+					that._requestRefManage(0);
+					that._requestTable();
+				};
+				window.top.Vue.prototype.$confirm('您确定要删除吗？', '删除企业审批配置信息', {
+					type: 'warning',
+					callback: function (action) {
+						if (action === 'confirm') {
+							var url = jasTools.base.rootPath + "/jdbc/commonData/approveEnterpriseRef/delete.do";
+							jasTools.ajax.post(url, {
+								oid: row.oid
+							}, function (data) {
+								afterDelete();
+							});
+						}
+					}
+				});
+			},
+			getDetail: function (row) {
+				var baseSrc = jasTools.base.rootPath +
+					'/jasmvvm/pages/module-privilege/approve-ref-manage/dialogs/detail-ref.html';
+				var src = jasTools.base.setParamsToUrl(baseSrc, {
+					currentEnterpriseId: row.currentEnterpriseId
+				});
+				top.jasTools.dialog.show({
+					width: '800px',
+					height: '500px',
+					title: '企业审批配置详情',
+					src: src,
+				});
+			},
+			handleSelectionChange: function (selects) {
+				this.selectedRows = selects;
+			},
+			checkRow: function (row, event, column) {
+				if (column.label == '操作') return;
+				this.$refs['mytable'].toggleRowSelection(row)
+			},
+			renderContent: function (h, {
+				node,
+				data,
+				store
+			}) {
+				var createElement = arguments[0];
+				console.log(arguments[1].node);
+				var label = arguments[1].node.label;
+				var text_color = '#606266'; //已配置
+				if (label.indexOf("配置") > -1) {
+					text_color = "#009933";
+					label = label.replace("【已配置】", "")
+				}
+				return createElement('span', {
+					attrs: {
+						style: 'color:' + text_color + ''
+					}
+				}, [
+					createElement('span', label)
+				], );
+			}
+		},
+	});
+</script>
+
+</html>

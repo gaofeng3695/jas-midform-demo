@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <link rel="stylesheet" href="./../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+  <link rel="stylesheet" href="./../../../../lib/element-ui/v2.13.2/theme-chalk/index.min.css">
+  <link rel="stylesheet" href="./../../../../common/css/main.css">
+  <style>
+    /* 大屏风格重置样式 */
+    html,
+    body,
+    #app,
+    .outerwrapper {
+      background: unset !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" v-cloak>
+
+    <div style="width: 100%;height:100%; padding: 10px;box-sizing: border-box;">
+      <video :src="myvideo" controls="controls" style="width: 100%;" autoplay></video>
+    </div>
+  </div>
+</body>
+<script src="./../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../lib/vue/vue.js"></script>
+<script src="./../../../../lib/element-ui/v2.13.2/index.min.js"></script>
+<script src="./../../../../common/components/jas-components.js "></script>
+<script src="./../../../../common/js/jas-tools.js"></script>
+<script>
+  // MP4 = MPEG 4文件使用 H264 视频编解码器和AAC音频编解码器
+  // WebM = WebM 文件使用 VP8 视频编解码器和 Vorbis 音频编解码器
+  // Ogg = Ogg 文件使用 Theora 视频编解码器和 Vorbis音频编解码器
+
+  var app = new Vue({
+    el: "#app",
+    data: function () {
+      return {
+
+        myvideo: '',
+        activities: [],
+        oid: '',
+      }
+    },
+    created: function () { //先请求要展示的字段，再请求字段的详情，最后请求附件
+      var that = this;
+      var param = window.jasTools.base.getParamsInUrl(location.href);
+      that.oid = param.oid;
+      if (!param.oid) {
+        that.myvideo = jasTools.base.rootPath + '/jasmvvm/pages/group-onepage-wider/_src/videos/1.mp4';
+        // alert('请传入oid')
+        // return
+      }
+      this.getLine();
+    },
+    mounted: function () {
+
+    },
+    methods: {
+      close: function () {
+        top.jasTools.dialog.close();
+      },
+      getLine: function () {
+        var that = this;
+        var url = jasTools.base.rootPath + "/attachment/getVideoPath.do";
+        jasTools.ajax.get(url, {
+          oid: that.oid
+        }, function (data) {
+          that.myvideo = data.data;
+        });
+
+      },
+    },
+  });
+</script>
+
+</html>

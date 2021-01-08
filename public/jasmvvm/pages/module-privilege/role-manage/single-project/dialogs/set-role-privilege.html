@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Document</title>
+	<link rel="stylesheet" href="./../../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+	<link rel="stylesheet" href="./../../../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+	<link rel="stylesheet" href="./../../../../../common/css/main.css">
+
+	<style>
+		/*html,
+		body {
+			width: 100%;
+		}
+
+		#app {
+			width: 100%;
+			height: 100%;
+			position: relative;
+			overflow: hidden;
+		}*/
+
+		.resizepanel {
+			overflow-x: hidden;
+			overflow-y: auto;
+		}
+
+		.orgtitle {
+			height: 40px;
+			color: #fff;
+			background: #409EFF;
+			line-height: 40px;
+			/* padding: 0 0 0 15px; */
+			text-align: center;
+		}
+
+		.orgtool {
+			height: 40px;
+			/* border-bottom:1px solid #e4e7ed; */
+			text-align: right;
+			padding: 0 10px;
+			overflow: hidden;
+		}
+
+		.filterapplication {
+			padding: 10px 10px 0px 10px;
+		}
+
+		.filterwrap {
+			padding: 10px 10px 0px 10px;
+		}
+
+		.content {
+			height: 100%;
+			padding: 0 10px;
+		}
+
+		.content .el-tabs__content {
+			width: 100%;
+			-webkit-box-flex: 1;
+			-ms-flex: 1;
+			flex: 1;
+			overflow: auto;
+		}
+
+		.is-grown:first-child {
+			height: 100%
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app" v-cloak v-loading="saveLoading"  element-loading-text="正在保存，请稍候。。">
+		<!--<jas-dialog-wrapper>-->
+		<jas-two-panel-resizer layout="vertical" length="200px">
+			<template slot="closePanel">
+				<jas-base-module-title name="应用系统列表"></jas-base-module-title>
+				<el-tree ref="appTree" class="is-grown" node-key="oid" default-expand-all :data="applications" :highlight-current="true"  :current-node-key="currentApplicationId" @node-click="clickAppName">
+					<span class="custom-tree-node" slot-scope="scope">
+								<i class="fa fa-user-circle-o" style="color:#99c8f8;" aria-hidden="true"></i>
+								<span>{{scope.node.label}}</span>
+					</span>
+				</el-tree>
+			</template>
+			<div class="content" slot="mainPanel">
+				<jas-base-module-title name="系统权限分配"></jas-base-module-title>
+				<div style="border-bottom:1px solid #ececec;padding: 10px 0 10px 0;">
+					<el-button size="small" plain type="primary" icon="fa fa-refresh" @click="refreshCurrentAppTree">刷新</el-button>
+					<el-button size="small" type="primary" icon="fa fa-floppy-o" @click="saveAppPrival">保存</el-button>
+				</div>
+				<el-tree ref="menuTree" v-loading="loading" class="is-grown" ref="privaltree" :data="menuData" node-key="id" :props="defaultProps" show-checkbox
+				 :default-expanded-keys="[currentNodeId]" :default-checked-keys="checkedKeys" highlight-current @node-click="clicknode"
+				 :expand-on-click-node="false" style="margin-top: 10px ">
+				</el-tree>
+			</div>
+		</jas-two-panel-resizer>
+		<!--</jas-dialog-wrapper>-->
+	</div>
+</body>
+<script src="./../../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../../lib/vue/vue.js"></script>
+<script src="./../../../../../lib/vue-multipane/vue-multipane.js"></script>
+<script src="./../../../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../../../common/components/jas-components.js "></script>
+<script src="./../../../../../common/js/jas-tools.js"></script>
+<script>
+	var app = new Vue({
+		el: "#app",
+		data: function () {
+			var that = this;
+			return {
+				loadig:true,
+				applications: [],//获取当前用户所拥有的系统列表
+				roleId: '',//用户角色Id
+				but_disabled: false,
+				loading: false,
+				saveLoading:false,
+				// tableFormData: {
+				// },
+				currentApplicationId: '',
+				menuData: [],
+				defaultProps: {
+					label: 'text',
+					menuData: 'menuData'
+				},
+				checkedKeys: [],
+				currentNodeId: '',//用于展开当前的节点
+
+			}
+		},
+		mounted: function () {
+			var param = window.jasTools.base.getParamsInUrl(location.href);
+			if (param.roleId) {
+				this.roleId = param.roleId;
+				// this.tableFormData.roleId = param.roleId;
+			}
+			this.initApplications();
+		},
+		methods: {
+			initApplications: function () {
+				var that = this;
+				that.loading = true;
+				var url = jasTools.base.rootPath + "/jasframework/privilege/application/getUserAppsystem.do";
+				jasTools.ajax.get(url, {}, function (data) {
+					data.forEach(function (item) {
+						var obj = {
+							oid: item.oid,
+							label: item.appName
+						}
+						that.applications.push(obj);
+					});
+					that.loading = false;
+					if (data.length > 0) {
+						that.currentApplicationId = data[0].oid;
+						that.$nextTick(function() {
+							that.$refs.appTree.setCurrentKey(that.currentApplicationId); // 必须设定node-key
+						});
+						that.requestUnitTree();//获取当前系统下面的菜单树
+					}
+				});
+			},
+			requestUnitTree: function () {//获取当前用户下针对系统的菜单权限
+				var that = this;
+				that.loading = true;
+				var url = jasTools.base.rootPath + "/jasframework/privilege/privilege/getAllConfig.do";
+				jasTools.ajax.get(url, {
+					roleId: that.roleId,
+					appId: that.currentApplicationId
+				}, function (data) {
+					that.checkedKeys = that.getCheckedNodekeys(data);
+					that.menuData = data;
+					that.loading = false;
+					if (data.length > 0) that.currentNodeId = data[0].id;//用于展开根节点
+				});
+			},
+			refreshCurrentAppTree: function () {
+				var that = this;
+				that.requestUnitTree();
+			},
+			clickAppName: function (node) {//点击选中当前的系统,并请求当前系统的菜单权限
+				this.currentApplicationId = node.oid;
+				this.requestUnitTree();
+			},
+			saveAppPrival: function () {
+				var that = this;
+				that.saveLoading=true;
+				var url = jasTools.base.rootPath + "/jasframework/privilege/privilege/setPrivilege.do";
+				var aKey = that.getCheckedKeys(that.menuData, that.$refs.menuTree.getCheckedKeys(), 'id');
+				console.log(aKey);
+				jasTools.ajax.postForm(url, {
+					appId: that.currentApplicationId,
+					roleId: that.roleId,
+					privilegeIds:aKey.join(",")
+				}, function (data) {
+					top.Vue.prototype.$message({
+						type: 'success',
+						message: "权限分配成功"
+					});
+					that.saveLoading=false;
+					//	that.cancel(1);
+				}, function (data) {
+					if (data.status == -1) {
+						that.but_disabled = false;
+					}
+				});
+			},
+				getCheckedKeys: function(data, keys, key) {
+				var res = [];
+				recursion(data, false);
+				return res;
+
+				// arr -> 树形总数据
+				// keys -> getCheckedKeys获取到的选中key值
+				// isChild -> 用来判断是否是子节点
+				function recursion (arr, isChild) {
+					var aCheck = [];
+					for ( var i = 0; i < arr.length; i++ ) {
+						var obj = arr[i];
+						aCheck[i] = false;
+
+						if ( obj.children ) {
+							aCheck[i] = recursion(obj.children, true) ? true : aCheck[i];
+							if ( aCheck[i] ) {
+								res.push(obj[key]);
+							}
+						}
+
+						for ( var j = 0; j < keys.length; j++ ) {
+							if ( obj[key] == keys[j] ) {
+								aCheck[i] = true;
+								if ( res.indexOf(obj[key]) == -1 ) {
+									res.push(obj[key]);
+								}
+								break;
+							}
+						}
+					}
+					if ( isChild ) {
+						return aCheck.indexOf(true) != -1;
+					}
+				}
+			},
+			clicknode: function (node, b, c) {
+				this.currentNodeId = node.id;
+			},
+			getCheckedNodekeys: function (treeData) {
+				var checkedKeys = [];
+				var getCheckedKeysFromArr = function (arr) {
+					arr.forEach(function (item) {
+						if (item.checked) {
+							checkedKeys.push(item.id);
+						}
+						if (item.children) {
+							getCheckedKeysFromArr(item.children);
+						}
+					})
+				};
+				getCheckedKeysFromArr(treeData);
+				return checkedKeys;
+			},
+			cancel: function (param) {
+				window.parent.jasTools.dialog.close(param);
+			}
+		},
+	});
+
+</script>
+
+</html>

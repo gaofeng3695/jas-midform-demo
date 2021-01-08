@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="./../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+    <link rel="stylesheet" href="./../../../../lib/element-ui/v2.13.2/theme-chalk/index.min.css">
+    <link rel="stylesheet" href="./../../../../common/css/main.css">
+    <style>
+        .text-overflow {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            color: #959cce;
+            flex: 1
+        }
+
+        .main {
+            border-bottom: 1px solid rgb(236, 245, 255);
+            padding-bottom: 10px;
+        }
+
+        .file_name {
+            height: 42px;
+            display: flex;
+        }
+
+        .tilte_cl {
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            width: 100px;
+            margin-right: 15px;
+        }
+
+        .tilte_cll {
+            text-align: center;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            width: 100px;
+            margin-right: 15px;
+        }
+
+        .el-checkbox__input.is-disabled.is-checked .el-checkbox__inner {
+            background-color: #409EFF !important;
+            border-color: #409EFF !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <el-tabs type="border-card">
+            <el-tab-pane label="详细信息">
+                <!-- <iframe style="width:100%;height:100%;"
+                    src="detail.html?oid=1714953d-79a5-470a-bdc1-ad2fe84f385b&pageCode=file"></iframe> -->
+                <div style="height: 100%;overflow: auto;">
+                    <jas-dialog-wrapper>
+                        <div>
+                            <jas-base-group-title name="基本信息"></jas-base-group-title>
+                            <jas-detail-table :titles="fields" :detail="detail"></jas-detail-table>
+                            <jas-base-group-title name="摘要信息"></jas-base-group-title>
+                            <jas-detail-table :titles="fields2" :detail="detail"></jas-detail-table>
+                            <jas-base-group-title v-if="pageCode=='file'" name="其他信息"></jas-base-group-title>
+                            <jas-detail-table :titles="fields3" :detail="detail"></jas-detail-table>
+                            <jas-base-group-title v-if="pageCode=='file'" name="日志信息"></jas-base-group-title>
+                            <div v-if="isFile" class="block">
+                                <el-timeline :reverse="true">
+                                    <template v-for="item in logData">
+                                        <el-timeline-item :timestamp="item[0].createDate" placement="top">
+                                            <el-card>
+                                                <template v-for="obj in item">
+                                                    <p>{{obj.createUserName}} 于 {{obj.createTime}} {{obj.optType}}文件</p>
+                                                </template>
+                                            </el-card>
+                                        </el-timeline-item>
+                                    </template>
+                                </el-timeline>
+                            </div>
+                        </div>
+                    </jas-dialog-wrapper>
+                </div>
+            </el-tab-pane>
+            <el-tab-pane label="已分配权限">
+                <div class="main">
+                    <div ref="file_name" class="file_name">
+                        <div class="tilte_cl">授权文件：</div>
+                        <div class="text-overflow" :title="fileName">{{fileName}}</div>
+                    </div>
+                    <div style="display: flex;" ref="tree_parent">
+                        <div class="tilte_cll">授权单位：</div>
+                        <div style="flex:1">
+                            <el-tree :style="heightStyle" style="border: 1px #3a8ee6 solid; overflow-y: scroll;"
+                                ref="unitTree" node-key="oid" :data="unitTreeData" show-checkbox
+                                :default-expand-all="true" :props="defaultProps" :check-strictly="true">
+                            </el-tree>
+                        </div>
+
+                    </div>
+
+                </div>
+            </el-tab-pane>
+        </el-tabs>
+    </div>
+</body>
+<script src="./../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../lib/vue/v2.6.12/vue.js"></script>
+<script src="./../../../../lib/element-ui/v2.13.2/index.min.js"></script>
+
+<script src="./../../../../common/components/jas-components.js "></script>
+<script src="./../../../../common/js/jas-tools.js"></script>
+<script>
+    var filesConfig = {
+        folder: {
+            field1: [ //
+                {
+                    name: '文件夹名称',
+                    field: 'folderName',
+                    formatter: null,
+                }, {
+                    name: '文件夹路径',
+                    field: 'folderLocation',
+                }, {
+                    name: "文件夹编码",
+                    field: 'folderNo'
+                }, {
+                    name: '创建人',
+                    field: 'createDatetime',
+                }, {
+                    name: '创建时间',
+                    field: 'createUserName',
+                }, {
+                    name: '修改人',
+                    field: 'modifyUserName',
+                }, {
+                    name: '修改时间',
+                    field: 'modifyDatetime',
+                }
+            ],
+            field2: [{
+                name: '文件夹描述',
+                field: 'remark',
+            }]
+        },
+        file: {
+            field1: [ //
+                {
+                    name: '文档名称',
+                    field: 'fileName',
+                    formatter: null,
+                }, {
+                    name: '文档编号',
+                    field: 'fileNo',
+                }, {
+                    name: '文档格式',
+                    field: 'fileType',
+                }, {
+                    name: '文档位置',
+                    field: 'fileLocation',
+                }, {
+                    name: '文档大小（kb）',
+                    field: 'fileSize',
+                }, {
+                    name: '文档作者',
+                    field: 'author',
+                }, {
+                    name: '文档创建时间',
+                    field: 'fileCreateTime',
+                }, {
+                    name: '文档修改时间',
+                    field: 'fileUpdateTime',
+                }, {
+                    name: '上传人',
+                    field: 'createUserName',
+                }, {
+                    name: '上传时间',
+                    field: 'createDatetime',
+                }, {
+                    name: '关键词',
+                    field: 'keyWord',
+                },
+            ],
+            field2: [{
+                name: '文档摘要',
+                field: 'summary',
+            }],
+            field3: [{
+                name: '备注',
+                field: 'remark',
+            }]
+
+        }
+    };
+</script>
+<script>
+    var app = new Vue({
+        el: "#app",
+        data: function () {
+            var that = this;
+            return {
+                pageCode: '',
+                fields: [],
+                fields2: [],
+                fields3: [],
+                detail: {},
+                folderId: "",
+                fileId: "",
+                fileName: "",
+                unitTreeData: [],
+                defaultProps: {
+                    id: "oid",
+                    children: 'children',
+                    label: 'unitName',
+                    disabled: function (data, node) {
+                        return true;
+                    },
+                },
+                heightStyle: {
+                    height: "500px"
+                },
+                fullHeight: 0,
+                isFile: true,
+                logData: []
+            }
+        },
+        watch: {
+            fullHeight: function (val) {
+                this.heightStyle.height = (val - 130) + "px";
+                // console.log(localStorage.getItem("user"))
+                console.log(window.getComputedStyle(this.$refs.tree_parent).outlineOffset);
+            }
+        },
+        mounted: function () {
+            console.log(window.getComputedStyle(this.$refs.tree_parent).offset);
+        },
+        created: function () {
+            var that = this;
+            var param = window.jasTools.base.getParamsInUrl(location.href);
+            this.pageCode = param.pageCode;
+            // console.log(param)
+            if (param.pageCode == 'file') {
+                this.fields = filesConfig['file'].field1;
+                this.fields2 = filesConfig['file'].field2;
+                this.fields3 = filesConfig['file'].field3;
+                param.oid && this.getFileDetailByOid(param.oid);
+                this.isFile = true;
+            } else {
+                this.fields = filesConfig['folder'].field1;
+                this.fields2 = filesConfig['folder'].field2;
+                param.oid && this.getFolderDetailByOid(param.oid);
+                this.isFile = false;
+            }
+            this.fileName = decodeURI(param.fileName);
+            this.fileId = param.oid;
+            this.folderId = param.folderId;
+            this.requestTreeData();
+
+            this.fullHeight = window.innerHeight;
+            this.heightStyle.height = (this.fullHeight - 130) + "px";
+            window.onresize = () => {
+                this.fullHeight = window.innerHeight;
+            }
+        },
+        methods: {
+            requestTreeData: function () {
+                var that = this;
+                var url = jasTools.base.rootPath + "/treeView/nmpspUnit/getTreeView.do";
+                var param = {
+                }
+                jasTools.ajax.post(url, param, function (data) {
+                    that.unitTreeData = data.rows;
+                    that.requestPrivilegeUnit();
+                });
+            },
+            requestPrivilegeUnit: function () {
+                var that = this;
+                var url = jasTools.base.rootPath + "/jdbc/commonData/nmpspFileUnitRef/getList.do";
+                var param = {
+                    "fileIds": [that.fileId]
+                }
+                jasTools.ajax.post(url, param, function (data) {
+                    var checkNodes = []
+                    data.rows.forEach(function (item) {
+                        checkNodes.push(item.unitId);
+                    });
+                    that.$refs.unitTree.setCheckedKeys(checkNodes)
+                });
+            },
+            getFileDetailByOid: function (oid) {
+                var that = this;
+                that.queryLog(oid);
+                var url = jasTools.base.rootPath + "/nmpsp/jasdoc/get.do";
+                jasTools.ajax.get(url, {
+                    oid: oid,
+                }, function (data) {
+                    that.detail = data.data;
+                });
+            },
+            getFolderDetailByOid: function (oid) {
+                var that = this;
+                var url = jasTools.base.rootPath + "/jdbc/commonData/jasdocFolder/get.do";
+                jasTools.ajax.get(url, {
+                    oid: oid,
+                }, function (data) {
+                    that.detail = data.data;
+                });
+            },
+            queryLog: function (oid) {
+                var that = this;
+                var url = jasTools.base.rootPath + "/serviceMvc/nmpspDoc/queryLog.do";
+                jasTools.ajax.post(url, {
+                    businessId: oid,
+                }, function (data) {
+                    that.logData = data.data;
+                });
+            }
+        },
+    });
+</script>

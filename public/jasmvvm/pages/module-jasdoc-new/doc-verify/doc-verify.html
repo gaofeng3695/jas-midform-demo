@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title></title>
+    <!-- <link rel="stylesheet" href="./libelement-ui/element-#0E2B4A/src/index.css"> -->
+    <link rel="stylesheet" href="./../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+    <link rel="stylesheet" href="./../../../lib/font-awesome-4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./../../../lib/vue-treeselect/vue-treeselect.min.css">
+    <!-- <link rel="stylesheet" href="./../../../lib/viewer/viewer.min.css"> -->
+    <link rel="stylesheet" href="./../../../common/css/main.css">
+    <link rel="stylesheet" href="./../../../common/css/element-reset.css">
+    <style>
+        .searchWrapper {
+            overflow: unset !important;
+        }
+
+        .vue-treeselect__control {
+            height: 34px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" v-cloak v-loading="loading">
+        <jas-list-wrapper ref="mylist">
+            <div slot="search">
+                <el-form v-show="!isClosed" class="jas-search-for-list" :model="form" label-width="120px">
+                    <el-row>
+                        <el-col :xs="24" :sm="24" :md="12" :lg="8" :xl="6">
+                            <el-form-item label="文档名称" prop="fileName" style="margin-bottom: 15px ">
+                                <el-input v-model="form.fileName" :placeholder="'请输入文档名称'" size="small" clearable>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :xs="24" :sm="24" :md="12" :lg="8" :xl="6">
+                            <el-form-item label="文档位置" prop="folderId" style="margin-bottom: 15px ">
+                                <treeselect style="margin-top: 3px;" aria-placeholder="请选择文件夹" placeholder="请选择文档位置"
+                                    :options="treeList" :normalizer="normalizer" v-model="form.folderId">
+                                </treeselect>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :xs="24" :sm="24" :md="12" :lg="8" :xl="6">
+                            <el-form-item label="上传时间" prop="uploadTime" style="margin-bottom: 15px ">
+                                <el-date-picker size="small" v-model="form.uploadTime" type="daterange"
+                                    value-format="yyyy-MM-dd HH:mm:ss" range-separator="至" start-placeholder="开始日期"
+                                    end-placeholder="结束日期" :default-time="['00:00:00','23:59:59']" style="width:100%;">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :xs="24" :sm="24" :md="12" :lg="8" :xl="6">
+                            <el-form-item label="审核状态" prop="auditState" style="margin-bottom: 15px ">
+                                <el-select v-model="form.auditState" placeholder="请选择审核状态" size="small" clearable
+                                    style="width:100%;">
+                                    <el-option v-for="item in statusOps" :key="item.value" :label="item.label"
+                                        :value="item.value">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+
+                        <el-col :xs="24" :sm="btnSize.sm" :md="btnSize.md" :lg="btnSize.lg" :xl="btnSize.xl">
+                            <el-form-item style="float:right;margin-bottom: 0px;">
+                                <el-button size="small" @click="requestList(1)">重置</el-button>
+                                <el-button size="small" type="primary" @click="requestList(2)">查询</el-button>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+            <div slot="list" class="jas-flex-box is-vertical is-grown">
+                <div style="padding: 10px 0;">
+
+                    <!-- <el-button @click="createNewFolder" v-if="isEditMode" size="small" plain type="primary" icon="fa fa-plus">新建分类</el-button>
+					<el-button @click="deleteFile" :disabled="selectedFiles.length==0" size="small" plain type="primary" icon="fa fa-minus">移除文档</el-button> -->
+
+
+                    <span class="fr">
+                        <el-tooltip class="item" content="刷新" placement="top">
+                            <el-button size="small" icon="el-icon-refresh" @click="requestList"></el-button>
+                        </el-tooltip>
+                        <el-tooltip v-show="isClosed" class="item" content="展开搜索" placement="top">
+                            <el-button size="small" icon="el-icon-arrow-down" @click="toggleSearch"></el-button>
+                        </el-tooltip>
+                        <el-tooltip v-show="!isClosed" class="item" content="收起搜索" placement="top">
+                            <el-button size="small" icon="el-icon-arrow-up" @click="toggleSearch"></el-button>
+                        </el-tooltip>
+                    </span>
+                </div>
+                <div class="is-grown">
+                    <el-table ref="mytable" @selection-change="handleSelectionChange" @row-dblclick="seeDetail"
+                        v-loading="loading" height="100%" :data="tableData" border :header-cell-style="headStyle"
+                        style="width: 100%" stripe @sort-change="sortChange">
+                        <!-- <el-table-column type="selection" width="55" align="center" fixed></el-table-column> -->
+                        <el-table-column label="序号" type="index" align="center" width="50" fixed>
+                        </el-table-column>
+                        <el-table-column sortable="custom" label="审核状态" prop="auditState" min-width="120px"
+                            show-overflow-tooltip align="center" fixed>
+                            <template slot-scope="scope">
+                                <el-tag v-if="scope.row.auditState==-1" type="danger" size="medium">已驳回
+                                </el-tag>
+                                <el-tag v-if="scope.row.auditState==1" type="warning" size="medium">审核中
+                                </el-tag>
+                                <el-tag v-if="scope.row.auditState==2" type="success" size="medium">审核通过
+                                </el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column sortable="custom" label="文档名称" fixed prop="fileName" min-width="170px"
+                            show-overflow-tooltip align="center" header-align="center">
+                        </el-table-column>
+                        <el-table-column sortable="custom" label="上传人" prop="createUserName" min-width="100px"
+                            show-overflow-tooltip align="center">
+                        </el-table-column>
+                        <el-table-column sortable="custom" label="文档格式" prop="fileType" min-width="80px"
+                            show-overflow-tooltip align="center">
+                        </el-table-column>
+                        <el-table-column sortable="custom" label="文档位置" prop="fileLocation" min-width="200px"
+                            show-overflow-tooltip align="center">
+                        </el-table-column>
+                        <el-table-column sortable="custom" label="文档大小(kb)" prop="fileSize" min-width="80px"
+                            show-overflow-tooltip align="center">
+                        </el-table-column>
+                        <el-table-column sortable="custom" label="审核人" prop="auditUserName" min-width="100px"
+                            show-overflow-tooltip align="center">
+                        </el-table-column>
+                        <el-table-column sortable="custom" label="审核时间" prop="auditDatetime" min-width="130px"
+                            show-overflow-tooltip align="center">
+                        </el-table-column>
+                        <el-table-column label="操作" align="center" width="280" fixed="right">
+                            <template slot-scope="scope">
+                                <el-button @click="preview(scope.row.eventid,scope.row)" type="text" size="small">预览
+                                </el-button>
+                                <el-button @click="seeDetail(scope.row)" type="text" size="small">详情</el-button>
+                                <el-button @click="downloadFile(scope.row)" type="text" size="small">下载</el-button>
+                                <el-button @click="gotoVerify(scope.row,true)"
+                                    :disabled="scope.row.auditState == -1 || scope.row.auditState==2" type="success"
+                                    size="small">通过</el-button>
+                                <el-button @click="gotoVerify(scope.row)"
+                                    :disabled="scope.row.auditState == -1 || scope.row.auditState==2" type="danger"
+                                    size="small">驳回</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+                <div class="clearfix">
+                    <el-pagination class="fr" @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                        :current-page="currentPage" :page-sizes="[10, 20, 50, 100]" :page-size="pageSize"
+                        layout="total, sizes, prev, pager, next, jumper" :total="total">
+                    </el-pagination>
+                </div>
+            </div>
+
+        </jas-list-wrapper>
+
+
+
+    </div>
+</body>
+
+<script src="./../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../lib/vue/vue.js"></script>
+
+<script src="./../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../common/components/jas-components.js"></script>
+<script src="./../../../lib/vue-treeselect/vue-treeselect.min.js"></script>
+
+<script src="./../../../common/js/jas-tools.js"></script>
+<script>
+    var vm = new Vue({
+        el: '#app',
+        data: function () {
+            return {
+                headStyle: {
+                    'background-color': '#f5f7fa ',
+                },
+                isClosed: false,
+                tableData: [],
+                form: {},
+                btnSize: {
+                    sm: 0,
+                    md: 0,
+                    lg: 0,
+                    xl: 0,
+                },
+                pageSize: 10,
+                currentPage: 1,
+                total: 0,
+                loading: false,
+                statusOps: [{
+                    label: "待审核",
+                    value: "1"
+                }, {
+                    label: "审核通过",
+                    value: "2"
+                }, {
+                    label: "审核不通过",
+                    value: "-1"
+                },],
+                treeList: [],
+                privilegeCode: "",
+                sortName: null,
+                sortOrder: null,
+                orderBy: null
+
+            }
+        },
+        computed: {},
+        watch: {},
+        created: function () {
+            var param = window.jasTools.base.getParamsInUrl(location.href);
+            this.privilegeCode = param.privilegeCode;
+            this.setFieldsPattern();
+            this.queryFolderTree();
+            this.requestList(1);
+        },
+        mounted: function () {
+
+        },
+        methods: {
+            requestList: function (param) { // 0刷新  1重置  2搜索
+                var that = this;
+                if (param == 1) {
+                    this.form = {};
+                    this.pageSize = 10;
+                    this.currentPage = 1;
+                }
+                if (param == 2) {
+                    this.pageSize = 10;
+                    this.currentPage = 1;
+                }
+                var url = jasTools.base.rootPath + "/jdbc/commonData/nmpspDocAudit/getPage.do";
+                that.loading = true;
+                jasTools.ajax.post(url, {
+                    "fileName": this.form.fileName,
+                    "createDatetime": this.form.uploadTime,
+                    "folderId": this.form.folderId,
+                    "auditState": this.form.auditState,
+                    "pageNo": this.currentPage,
+                    "pageSize": this.pageSize,
+                    "sortOrder": that.sortOrder,
+                    "sortName": that.sortName,
+                    "orderBy": that.orderBy
+                }, function (data) {
+                    that.loading = false;
+                    that.total = data.total;
+                    that.tableData = data.rows;
+                });
+
+            },
+            preview: function (oid, row) {
+                var that = this;
+                if (['jpg', 'png', 'gif'].indexOf(row.fileType.toLocaleLowerCase()) > -1) {
+                    var src = jasTools.base.setParamsToUrl(jasTools.base.rootPath + '/nmpsp/jasdoc/downloadDoc.do', {
+                        oid: row.oid,
+                        token: localStorage.getItem('token'),
+                    });
+                    return top.jasTools.base.viewImg(src);
+                }
+                var url = jasTools.base.rootPath + "/nmpsp/jasdoc/isExistPdfFile.do";
+                jasTools.ajax.postForm(url, {
+                    oid: row.oid,
+                }, function (data) {
+                    if (data.data == 1) {
+                        var baseSrc = jasTools.base.rootPath + '/jasmvvm/pages/module-pdf-viewer/web/viewer.html';
+                        top.jasTools.dialog.show({
+                            width: '80%',
+                            height: '90%',
+                            title: '文件预览',
+                            src: baseSrc + '?oid=' + row.oid + '&isNmpsp=true',
+                        });
+                    } else {
+                        if (data.data == 2) {
+                            top.Vue.prototype.$message({
+                                type: 'info',
+                                message: '预览文件正在转换，请稍等再试...'
+                            });
+                        } else {
+                            top.Vue.prototype.$message({
+                                type: 'error',
+                                message: '文件已丢失'
+                            });
+                        }
+
+                    }
+                }, function () {
+                    top.Vue.prototype.$message({
+                        type: 'error',
+                        message: '文件已丢失'
+                    });
+                });
+            },
+            seeDetail: function (row) {
+                var that = this;
+                var baseSrc = jasTools.base.rootPath + '/jasmvvm/pages/module-jasdoc-new/doc-center/dialogs/detail.html';
+                var src = jasTools.base.setParamsToUrl(baseSrc, {
+                    oid: row.oid,
+                    pageCode: 'file'
+                });
+                top.jasTools.dialog.show({
+                    width: '60%',
+                    height: '80%',
+                    title: "文件详情",
+                    src: src,
+                });
+            },
+            downloadFile: function (row) {
+                var that = this;
+                var baseUrl = jasTools.base.rootPath + "/nmpsp/jasdoc/downloadDoc.do";
+                var downloadUrl = jasTools.base.setParamsToUrl(baseUrl, {
+                    oid: row.oid
+                });
+                jasTools.ajax.downloadByIframe('POST', downloadUrl);
+            },
+            gotoVerify: function (row, isPass) {
+                var that = this;
+                that.loading = true;
+                var baseUrl = jasTools.base.rootPath + "/nmpsp/jasdoc/auditFile.do"
+                jasTools.ajax.post(baseUrl, {
+                    "fileIds": [row.oid],
+                    "auditState": isPass ? 2 : -1
+                }, function (data) {
+                    that.loading = false;
+                    top.Vue.prototype.$message({
+                        type: 'success',
+                        message: '提交成功'
+                    });
+                    that.requestList()
+                });
+            },
+            queryFolderTree: function () {
+                var that = this;
+                // var url = jasTools.base.rootPath + "/treeView/nmpspDocFolder/getTreeView.do";
+                var url = jasTools.base.rootPath + "/serviceMvc/nmpspDoc/queryJasDocTree.do";
+                jasTools.ajax.post(url, { "privilegeCode": that.privilegeCode }, function (data) {
+                    // that.treeList = data.rows[0].children;
+                    that.treeList = data.data[0].children;
+                });
+            },
+            normalizer: function (node) {
+                return {
+                    id: node.oid,
+                    label: node.folderName,
+                    children: node.children.length > 0 ? node.children : undefined,
+                }
+            },
+            toggleSearch: function () {
+                this.$refs['mylist'].toggleSearch();
+                this.isClosed = this.$refs['mylist'].isClosed;
+            },
+            handleSelectionChange: function (selects) {
+                this.selectedRows = selects;
+            },
+            handleSizeChange: function (val) {
+                this.pageSize = val;
+                this.requestList();
+            },
+            handleCurrentChange: function (val) {
+                this.currentPage = val;
+                this.requestList();
+            },
+            setFieldsPattern: function () {
+                var nFields = 4;
+                this.btnSize.sm = 24 - (24 * nFields) % 24;
+                this.btnSize.md = 24 - (12 * nFields) % 24;
+                this.btnSize.lg = 24 - (8 * nFields) % 24;
+                this.btnSize.xl = 24 - (6 * nFields) % 24;
+            },
+            sortChange: function (column, prop, order) {
+                var that = this;
+                this.sortName = column.prop || '';
+                this.sortOrder = column.order === 'ascending' ? 'asc' : 'desc';
+                this.sortOrder = column.prop ? this.sortOrder : '';
+                this.orderBy = this.sortName + " " + this.sortOrder
+                this.requestList()
+            },
+        },
+    });
+</script>
+
+</html>

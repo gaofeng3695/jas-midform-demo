@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>施工数据采集</title>
+	<!-- <link rel="stylesheet" href="../../libelement-ui/element-#0E2B4A/src/index.css"> -->
+	<link rel="stylesheet" href="../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+	<link rel="stylesheet" href="../../lib/font-awesome-4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="../../common/css/main.css">
+
+</head>
+
+<body>
+	<div id="app">
+		<jas-dialog-wrapper>
+			<div class="jas-detail-table" style="padding-top:15px;">
+				<table class="table_wrap">
+					<tr v-for="item in fields">
+						<th>{{item.name}}</th>
+						<td v-if="!isDetail&&item.isEdit">
+							<el-input v-model="detail[item.field]" size="small"></el-input>
+						</td>
+						<td v-else v-text="detail[item.field]" style="padding:9px 6px"></td>
+					</tr>
+				</table>
+			</div>
+			<div slot="footer">
+				<el-button size="small" @click="update" type="primary">{{btnName}}</el-button>
+				<el-button size="small" @click="cancel">取消</el-button>
+			</div>
+		</jas-dialog-wrapper>
+	</div>
+</body>
+<!-- import Vue before Element -->
+<script src="../../lib/vue/vue.js"></script>
+<script src="../../lib/jquery/jquery-1.12.4.min.js"></script>
+<!-- import JavaScript -->
+<script src="../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="../../common/components/jas-components.js"></script>
+<script src="../../common/js/jas-tools.js"></script>
+
+<script>
+	var vm = new Vue({
+		el: "#app",
+		data: function () {
+
+			return {
+				fields: [{
+					field: 'userName',
+					name: '用户名',
+					isEdit: false
+				}, {
+					field: 'unitName',
+					name: '部门名称',
+					isEdit: false
+				}, {
+					field: 'phone',
+					name: '电话',
+					isEdit: true,
+				}, {
+					field: 'email',
+					name: 'Email',
+					isEdit: true,
+				}, {
+					field: 'roleNames',
+					name: '拥有角色',
+					isEdit: false
+				}],
+				detail: JSON.parse(localStorage.getItem('user')),
+				btnName: "更正",
+				isDetail: true,
+			};
+		},
+		mounted: function () {
+
+		},
+		methods: {
+			update: function () {
+				var that = this;
+				if (that.btnName == "确定") {
+					that.validate(function () {
+						that.updateToServer();
+						that.btnName = "更正";
+						that.isDetail = true;
+					});
+				} else {
+					that.btnName = "确定";
+					that.isDetail = false;
+				}
+			},
+			updateToServer: function () {
+				var that = this;
+				var url = jasTools.base.rootPath + '/jdbc/commonData/user/update.do';
+				jasTools.ajax.post(url, {
+					oid: that.detail.oid,
+					phone: that.detail.phone,
+					email: that.detail.email
+				}, function (data) {
+					if (data.status == 1) {
+						localStorage.removeItem('user');
+						localStorage.setItem('user', JSON.stringify(that.detail));
+						window.top.Vue.prototype.$message({
+							message: '修改成功',
+							type: 'success'
+						});
+					}
+				});
+			},
+			cancel: function () {
+				top.jasTools.dialog.close(1);
+			},
+			validate: function (callback) {
+				var that = this;
+				if (that.detail.phone) {
+					var reg = /^1[3456789]\d{9}$/
+					if (!reg.test(that.detail.phone)) {
+						window.top.Vue.prototype.$message({
+							message: '您的手机号码格式不正确',
+							type: 'error'
+						});
+						return;
+					}
+				}
+				if (that.detail.email) {
+					var reg =
+						/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+					if (!reg.test(that.detail.email)) {
+						window.top.Vue.prototype.$message({
+							message: '您的邮箱格式错误',
+							type: 'error'
+						});
+						return;
+					}
+				}
+				callback && callback();
+			}
+		}
+	});
+</script>
+
+</html>

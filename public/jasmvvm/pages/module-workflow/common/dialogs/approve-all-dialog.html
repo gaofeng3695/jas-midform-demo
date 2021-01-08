@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Document</title>
+	<link rel="stylesheet" href="./../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+	<link rel="stylesheet" href="./../../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+	<link rel="stylesheet" href="./../../../../lib/vue-treeselect/vue-treeselect.min.css">
+	<link rel="stylesheet" href="./../../../../common/css/main.css">
+	<style>
+		.el-form-item {
+			margin-bottom: 12px;
+		}
+
+		.outwrap {
+			/* height: 100%; */
+			padding: 0 10px;
+		}
+
+		/* .outwrap .footer {
+			padding: 10px 0 0 0;
+			border-top: 1px solid #ececec;
+			text-align: center;
+		} */
+
+		.dialog-footer {
+			background: #fff;
+			width: 100%;
+			position: absolute;
+			bottom: 0px;
+			z-index: 190;
+			height: 40px;
+			line-height: 40px;
+			padding: 10px 0 0 0;
+			text-align: center;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app" v-cloak v-loading="loading">
+		<jas-dialog-wrapper>
+			<el-form ref="myform" :model="myform" :rules="rules" label-width="120px">
+				<jas-base-group-title name="审批信息"></jas-base-group-title>
+				<el-row :gutter="10">
+					<el-col :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
+						<el-form-item v-if="!carbonId" label="审批意见" prop="auditContent">
+						<el-input type="textarea" size="small" v-model="myform.auditContent"></el-input>
+					</el-form-item>
+					</el-col>
+				</el-row>
+			</el-form>
+			<div slot="footer">
+				<el-button size="small" @click="cancel()">取 消</el-button>
+				<el-button size="small" :disabled="but_disabled" type="primary" @click="approveAll()">通 过</el-button>
+			</div>
+		</jas-dialog-wrapper>
+
+	</div>
+</body>
+<script src="./../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../lib/vue/vue.js"></script>
+<script src="./../../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../../common/components/jas-components.js "></script>
+<script src="./../../../../common/js/jas-tools.js"></script>
+
+
+<script>
+	var app = new Vue({
+		el: "#app",
+		data: function () {
+			var that = this;
+			return {
+				isEdit: false,
+				but_disabled: false,
+				proInstId: '',
+				businessKey: '',
+				taskId: '',
+				carbonId: '',
+				headStyle: {
+					'background-color': '#f5f7fa ',
+				},
+				myform: {
+					auditContent: '通过'
+				},
+				rules: {
+					auditContent: [{
+						required: true,
+						message: '该字段为必填项',
+						trigger: 'blur'
+					}]
+				},
+				outflows:{},
+				fromTable: '',
+				requestSuccessCount:0,
+				loading: false
+			}
+		},
+		computed: {},
+		created: function () {
+			var that = this;
+			var param = window.jasTools.base.getParamsInUrl(location.href);
+			that.fromTable = param.fromTable;
+		},
+		methods: {
+			formatterObj: function(outflows){
+				var that = this;
+				for(var item in outflows){
+					//console.log(item)
+					if(outflows[item].pass){
+						return outflows[item];
+					}
+				}
+				return {};
+			},
+			queryOutflows: function (taskId) {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jasframework/workflow/task/getOutflows.do";
+				jasTools.ajax.get(url, {
+					taskId: taskId
+				}, function (data) {
+					that.requestApprove(taskId,that.formatterObj(data.data.outflows));
+				});
+			},
+			requestApprove: function (taskId, outflow) {
+				var that = this;
+				var url = jasTools.base.rootPath + '/jasframework/workflow/task/approve.do';
+				var flowVars = jasTools.base.extend({
+					auditContent: that.myform.auditContent
+				}, outflow);
+				//console.log(flowVars)
+
+				jasTools.ajax.post(url, {
+					flowVars: flowVars,
+					taskId: taskId
+				}, function (data) {
+					that.requestSuccessCount = that.requestSuccessCount+1;
+					if(window.parent.app.approveRows.length === that.requestSuccessCount) {
+						top.Vue.prototype.$message.success('审批成功');
+						that.cancel();
+					}
+				});
+			},
+			cancel: function (param) {
+				window.top.jasTools.dialog.close(param);
+			},
+			approveAll: function(){
+				var that = this;
+				that.loading =  true;
+				this.$refs.myform.validate(function (valid) {
+					if (valid) {
+						var dataArray = window.parent.app.approveRows;
+						//console.log(dataArray)
+						if(that.fromTable == "1"){
+							$.each(dataArray,function(i,value){
+								that.getInstance(value.OID, that.queryOutflows);
+							});
+						}else{
+							$.each(dataArray,function(i,value){
+								that.queryOutflows(value.taskId);
+							});
+						}
+
+					} else {
+						console.log('error submit!!');
+						return false;
+					}
+				});
+				
+			},
+			getInstance: function (dataId, callback) {
+				window.parent.app.approveRows
+				var url = jasTools.base.rootPath + "/jasframework/workflow/instance/get.do";
+				jasTools.ajax.postForm(url, {
+					businessKey: dataId
+				}, function (data) {
+					if (JSON.stringify(data.data) === "{}") {
+						return;
+					}
+					if (callback != void 0) {
+						callback(data.data.currentTasks[0].taskId);
+					}
+				}, function () {});
+			}
+		},
+	});
+</script>
+
+</html>

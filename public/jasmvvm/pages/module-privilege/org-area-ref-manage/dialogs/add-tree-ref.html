@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Document</title>
+	<link rel="stylesheet" href="./../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+	<link rel="stylesheet" href="./../../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+	<link rel="stylesheet" href="./../../../../common/css/main.css">
+
+	<style>
+		html,
+		body {
+			width: 100%;
+		}
+
+		#app {
+			width: 100%;
+			height: 100%;
+			position: relative;
+			overflow: hidden;
+		}
+
+		.content {
+			height: calc(100% - 40px);
+			overflow-y: auto;
+			overflow-x: hidden;
+		}
+
+		.el-input-number,
+		.el-cascader,
+		.el-select {
+			width: 100%;
+		}
+
+		.dialog-footer {
+			padding-top: 8px;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app" v-cloak>
+
+		<jas-dialog-wrapper>
+				
+			<template>
+				<jas-base-group-title :name="titleName"></jas-base-group-title>
+				<el-tree ref="areaTree" :default-checked-keys="checkedKeys" @check-change="checkChanged"
+						:data="areaTreeData" show-checkbox :check-strictly="true" node-key="id" default-expand-all
+						:props="areaTreeProps" :expand-on-click-node="false"
+						style="margin-top: 10px "></el-tree>
+			</template>
+			
+			<div slot="footer">
+				<el-button size="small" @click="cancel()">取 消</el-button>
+				<el-button size="small" :disabled="but_disabled" type="primary" @click="save()">确 定</el-button>
+			</div>
+		</jas-dialog-wrapper>
+
+
+	</div>
+</body>
+<script src="./../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../lib/vue/vue.js"></script>
+<script src="./../../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../../common/components/jas-components.js"></script>
+<script src="./../../../../common/components/nmg-components.js"></script>
+<script src="./../../../../common/js/jas-tools.js"></script>
+<script>
+	var app = new Vue({
+		el: "#app",
+		data: function () {
+			var that = this;
+			return {
+				but_disabled: false,
+				tableFormData: {
+					"organizationId": "",	//机构id
+					"areaList": [], //行政区划id
+					"organizationType": "1",	// 企业
+				},
+				areaTreeProps: {
+					value: 'id',
+					label: 'text',
+				},
+				areaTreeData: [],
+				checkedKeys: [],
+				titleName: ""
+
+			}
+		},
+		computed: {
+		},
+
+		mounted: function () {
+			var param = window.jasTools.base.getParamsInUrl(location.href);
+			if (param.organizationId) {
+				this.tableFormData.organizationId = param.organizationId;
+				this._requestRefDetail(param.organizationId);
+			}
+			if(param.organizationName){
+				this.titleName = "【" + decodeURI(param.organizationName) + "】行政区划配置";
+			}
+		},
+		methods: {
+			checkChanged: function (data, checked, c) {
+				var that = this;
+				if (checked) {
+					//console.log([data])
+					that.setRootChecked([data]);
+				}
+				this.$nextTick(function () {
+					var arr = that.$refs.areaTree.getCheckedKeys();
+					that.updateTableData(arr);
+				})
+			},
+			clicknode: function (node, b, c) {
+				this.currentNodeId = node.id;
+			},
+			updateTableData: function (refData) {
+				var that = this;
+				that.tableFormData.areaList= refData;
+			},
+			setRootChecked:function(arr){
+				var that = this;
+				arr.forEach(function (item) {
+					that.$refs.areaTree.setChecked(item.id, true)
+					if (item.parentOid) {
+						that.$refs.areaTree.setChecked(item.parentOid, true)
+					}
+				})
+			},
+			getCheckedNodekeys: function(treeData){
+				var checkedKeys = [];
+				var getCheckedKeysFromArr = function (arr) {
+					arr.forEach(function (item) {
+						checkedKeys.push(item.areaId);
+					})
+				};
+				getCheckedKeysFromArr(treeData);
+				return checkedKeys;
+			},
+			submit: function (formName) {
+				var that = this;
+				this.$refs[formName].validate(function (valid) {
+					if (valid) {
+						that.save();
+					}
+				});
+			},
+			_requestRefDetail: function (organizationId) {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jdbc/commonData/organizationAreaRef/getList.do";
+				jasTools.ajax.post(url, {
+					organizationId: organizationId,
+					organizationType: "1"
+				}, function (data) {
+					that.checkedKeys = that.getCheckedNodekeys(data.rows);
+					that.areaTreeData = that.formatAreaTree(_aNMGDist);
+					//that.areaTreeData = data.rows;
+					//that.loading = false;
+					//if (data.rows > 0) that.currentNodeId = data[0].areaId;//用于展开根节点
+				});
+			},
+			save: function () {
+				var that = this;
+				var msg = "保存成功";
+				var url = jasTools.base.rootPath + "/organizationAreaRef/saveEnOrgRef.do";
+				that.but_disabled = true;
+				jasTools.ajax.post(url, that.tableFormData, function (data) {
+					top.Vue.prototype.$message({
+						type: 'success',
+						message: msg
+					});
+					that.cancel(1);
+				}, function (data) {
+					if (data.status == -1) {
+						that.but_disabled = false;
+					}
+				});
+			},
+			cancel: function (param) {
+				window.parent.jasTools.dialog.close(param);
+			},
+			formatAreaTree: function(treeData){
+				var that = this;
+				var formatter = function (arr) {
+					arr.forEach(function (item) {
+						item.id=item.oid;
+						item.text=item.name;
+						if(that._chargeFor(item.id, that.checkedKeys)){
+							item.checked=true;
+						}
+						if (item.children) {
+							formatter(item.children);
+						}
+					})
+				};
+				formatter(treeData);
+				return treeData; 
+			},
+			_chargeFor: function(treeId, refData){
+				var b= false;
+				for(var i=0; i<refData.length; i++){
+					if(treeId === refData[i].areaId){
+						b= true;
+						break ;
+					}
+				}
+				return b;
+			},
+			getCheckedKeys: function(data, keys, key) {
+				var res = [];
+				recursion(data, false);
+				return res;
+
+				// arr -> 树形总数据
+				// keys -> getCheckedKeys获取到的选中key值
+				// isChild -> 用来判断是否是子节点
+				function recursion (arr, isChild) {
+					var aCheck = [];
+					for ( var i = 0; i < arr.length; i++ ) {
+						var obj = arr[i];
+						aCheck[i] = false;
+
+						if ( obj.children ) {
+							aCheck[i] = recursion(obj.children, true) ? true : aCheck[i];
+							if ( aCheck[i] ) {
+								res.push(obj[key]);
+							}
+						}
+
+						for ( var j = 0; j < keys.length; j++ ) {
+							if ( obj[key] == keys[j] ) {
+								aCheck[i] = true;
+								if ( res.indexOf(obj[key]) == -1 ) {
+									res.push(obj[key]);
+								}
+								break;
+							}
+						}
+					}
+					if ( isChild ) {
+						return aCheck.indexOf(true) != -1;
+					}
+				}
+			},
+		},
+	});
+
+</script>
+
+</html>

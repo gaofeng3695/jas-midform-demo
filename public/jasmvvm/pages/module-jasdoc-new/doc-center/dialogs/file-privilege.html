@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="./../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+    <link rel="stylesheet" href="./../../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+    <link rel="stylesheet" href="./../../../../common/css/main.css">
+    <style>
+        .text-overflow {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            color: #959cce;
+            flex: 1
+        }
+
+        .header,
+        .main,
+        .foolter {
+            padding: 0 20px;
+        }
+
+        .main {
+            border-bottom: 1px solid rgb(236, 245, 255);
+            padding-bottom: 10px;
+        }
+
+        .foolter {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 45px;
+        }
+
+        .file_name {
+            height: 42px;
+            display: flex;
+        }
+
+        .tilte_cl {
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            width: 100px;
+            margin-right: 15px;
+        }
+
+        .tilte_cll {
+            text-align: center;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            width: 100px;
+            margin-right: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" v-cloak ref="app">
+        <div ref="header" class="header">
+            <jas-base-group-title name="文件授权"></jas-base-group-title>
+        </div>
+        <div class="main">
+            <div ref="file_name" class="file_name">
+                <div class="tilte_cl">待授权文件：</div>
+                <div class="text-overflow" :title="fileName">{{fileName}}</div>
+            </div>
+            <div style="display: flex;">
+                <div class="tilte_cll">待授权单位：</div>
+                <div style="flex:1">
+                    <el-tree :style="heightStyle" style="border: 1px #3a8ee6 solid; overflow-y: scroll;" ref="unitTree"
+                        node-key="oid" :data="unitTreeData" show-checkbox :default-expand-all="true"
+                        :props="defaultProps" :check-strictly="true">
+                    </el-tree>
+                </div>
+
+            </div>
+
+        </div>
+        <div ref="foolter" class="foolter">
+            <el-button size="small" @click="cancel()">取 消</el-button>
+            <el-button size="small" type="primary" @click="submitData()">确 定</el-button>
+        </div>
+    </div>
+</body>
+<script src="./../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../lib/vue/vue.js"></script>
+<script src="./../../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../../lib/vue-treeselect/vue-treeselect.min.js"></script>
+<script src="./../../../../common/components/jas-components.js "></script>
+<script src="./../../../../common/js/jas-tools.js"></script>
+<script>
+    var app = new Vue({
+        el: "#app",
+        data: function () {
+            return {
+                folderId: "",
+                fileId: "",
+                fileName: "",
+                unitTreeData: [],
+                defaultProps: {
+                    id: "oid",
+                    children: 'children',
+                    label: 'unitName'
+                },
+                heightStyle: {
+                    height: "500px"
+                },
+                fullHeight: 0
+            }
+        },
+        watch: {
+            fullHeight: function (val) {
+                this.heightStyle.height = (val - 150) + "px";
+                console.log(localStorage.getItem("user"))
+            }
+        },
+        mounted: function () {
+        },
+        created: function () {
+            var that = this;
+            var param = window.jasTools.base.getParamsInUrl(location.href);
+            this.fileName = decodeURI(param.fileName);
+            this.fileId = param.oid;
+            this.folderId = param.folderId;
+            this.requestTreeData();
+
+            this.fullHeight = window.innerHeight;
+            this.heightStyle.height = (this.fullHeight - 150) + "px";
+            window.onresize = () => {
+                this.fullHeight = window.innerHeight;
+            }
+        },
+        methods: {
+            requestTreeData: function () {
+                var that = this;
+                var url = jasTools.base.rootPath + "/treeView/nmpspUnit/getTreeView.do";
+                var param = {
+                }
+                jasTools.ajax.post(url, param, function (data) {
+                    that.unitTreeData = data.rows;
+                    that.requestPrivilegeUnit();
+                });
+            },
+            requestPrivilegeUnit: function () {
+                var that = this;
+                var url = jasTools.base.rootPath + "/jdbc/commonData/nmpspFileUnitRef/getList.do";
+                var param = {
+                    "fileIds": [that.fileId]
+                }
+                jasTools.ajax.post(url, param, function (data) {
+                    var checkNodes = []
+                    data.rows.forEach(function (item) {
+                        checkNodes.push(item.unitId);
+                    });
+                    that.$refs.unitTree.setCheckedKeys(checkNodes)
+                });
+            },
+            submitData: function () {
+                var that = this;
+                var checkedNodeKey = this.$refs.unitTree.getCheckedKeys()
+                console.log(checkedNodeKey);
+                var data = [];
+                checkedNodeKey.forEach(function (unitId) {
+                    data.push({ "fileId": that.fileId, "unitId": unitId, "folderId": that.folderId });
+                });
+                var url = jasTools.base.rootPath + "/nmpsp/jasdoc/saveFileUnitRef.do";
+                var param = {
+                    "fileId": that.fileId,
+                    "data": data,
+                    "folderId": that.folderId
+                }
+                jasTools.ajax.post(url, param, function (data) {
+                    top.Vue.prototype.$message({
+                        type: 'success',
+                        message: '授权成功'
+                    });
+                    that.cancel();
+                });
+            }, cancel: function (param) {
+                window.parent.jasTools.dialog.close(param);
+            },
+        }
+    });
+</script>

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <link rel="stylesheet" href="./../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+  <link rel="stylesheet" href="./../../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+  <link rel="stylesheet" href="./../../../../common/css/main.css">
+  <style>
+    .el-tabs__content,
+    #pane-second,
+    #pane-middle,
+    #pane-first {
+      height: 100%;
+    }
+
+    .el-tabs__header .is-top {
+      padding: 0px 10px;
+    }
+  </style>
+  <style>
+    /* 大屏风格重置样式 */
+    html,
+    body,
+    #app,
+    .outerwrapper {
+      background: unset !important;
+    }
+
+    .jas-detail-table .table_wrap th {
+      background-color: unset;
+    }
+
+    .jas-pic-list-tip {
+      color: #c2e7ff;
+    }
+
+    .jas-file-list-new-tip {
+      color: #c2e7ff;
+    }
+
+    .jas-dialog-wrapper-footer {
+      border: unset !important;
+    }
+
+    .el-upload-list.el-upload-list--text {
+      border: unset !important;
+    }
+
+    .el-upload-list.el-upload-list--text .el-upload-list__item {
+      border-color: #356cabbd !important;
+    }
+
+    .el-upload-list__item {
+      color: #c2e7ff;
+    }
+
+    .el-upload-list__item-name {
+      color: #c2e7ff;
+    }
+
+    .el-upload-list__item-name [class^=el-icon] {
+      color: #c2e7ff;
+    }
+
+    .el-upload-list__item:hover {
+      background-color: unset;
+    }
+
+    .jas-detail-table .table_wrap tr,
+    .jas-detail-table .table_wrap th,
+    .jas-detail-table .table_wrap td {
+      border: 1px solid #356cabbd;
+      color: #c2e7ff;
+    }
+
+    :focus {
+      outline: none;
+    }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+  </style>
+
+</head>
+
+<body>
+  <div id="app" v-cloak>
+
+    <jas-approve-dialog :type="approveType" :proid="proInstId" :oid="bizId" :class-name="className"
+      :function-code="menuCode" :child-page-url="childPageUrl">
+      <div>
+        <template v-for="group in formAttr">
+          <jas-base-group-title :name="group.groupName" v-show="group.groupName"></jas-base-group-title>
+          <jas-detail-table :titles="group.data" :detail="formData"></jas-detail-table>
+        </template>
+        <template v-if="isShowFiles">
+          <jas-base-group-title name="图片信息"></jas-base-group-title>
+          <jas-pic-list ref="piclist" v-if="bizId" :biz-id="bizId" :biz-type="bizType"></jas-pic-list>
+          <div v-if="ifVideoAttach">
+            <jas-base-group-title name="视频信息"></jas-base-group-title>
+            <jas-file-list-new ref="videolist" v-if="bizId" :biz-id="bizId" biz-type="hcavideo"
+              :file-preview="viewVideo">
+            </jas-file-list-new>
+          </div>
+          <jas-base-group-title name="附件信息"></jas-base-group-title>
+          <jas-file-list-new ref="filelist" v-if="bizId" :biz-id="bizId" :biz-type="bizType"
+            :file-preview="filePreview"></jas-file-list-new>
+        </template>
+      </div>
+    </jas-approve-dialog>
+  </div>
+</body>
+<script src="./../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../lib/vue/vue.js"></script>
+<script src="./../../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../../common/components/jas-components.js "></script>
+<script src="./../../../../common/js/jas-tools.js"></script>
+<script src="./../js/form-rules.js"></script>
+<script>
+  // 表单分组标题 /* 大屏风格重置样式 */
+  Vue.component('jas-base-group-title', {
+    props: {
+      name: {
+        default: '表单分组',
+        type: String
+      },
+    },
+    template: [
+      '<div style="margin:0px 0 6px;line-height:32px;padding-top:10px;">',
+      '	<span style="color:#fff;padding:0px 4px 0px 4px;height: 22px;line-height:22px;display:inline-block;border-left: 2px solid rgb(64, 158, 255)">{{name}}</span>',
+      '</div>'
+    ].join(''),
+  });
+</script>
+<script>
+  var app = new Vue({
+    el: "#app",
+    data: function () {
+      return {
+        bizType: 'attachment',
+        approveType: 0,
+        proInstId: "",
+        className: '',
+        loading: false,
+        tableData: [],
+        remarks: '',
+        bizId: '',
+        childId: '',
+        formData: {},
+        formAttr: [],
+        childPageUrl: '',
+        isQuery: {},
+        extraConfig: {},
+        menuCode: "",
+        pk: "",
+        isShowFiles: false,
+        ifVideoAttach: false,
+      }
+    },
+    created: function () { //先请求要展示的字段，再请求字段的详情，最后请求附件
+
+      var that = this;
+      var param = window.jasTools.base.getParamsInUrl(location.href);
+      this.menuCode = param.menuCode;
+      this.bizId = param.OID;
+      this.proInstId = param.proInstId
+      if (param.proInstId || param.approveType) {
+        that.approveType = 1;
+      }
+      delete param.menuCode;
+      this.isQuery = param;
+      this.requestFieldsConfig();
+
+      if (detailConfigSet && detailConfigSet[this.menuCode]) {
+        this.extraConfig = detailConfigSet[this.menuCode];
+        this.extraConfig.cbCreated && this.extraConfig.cbCreated.call(this);
+      }
+
+    },
+    mounted: function () {
+      this.extraConfig.cbMounted && this.extraConfig.cbMounted.call(this);
+    },
+    methods: {
+      viewVideo: function (oid) {
+        top.jasTools.selfDialogNew.show({
+          width: '900px',
+          height: '600px',
+          title: '视频预览',
+          src: jasTools.base.rootPath +
+            '/jasmvvm/pages/module-template/form-opra-template/dialogs/viewVideo.html?oid=' + oid,
+        });
+      },
+      filePreview: function (oid) {
+        top.jasTools.selfDialogNew.show({
+          width: '80%',
+          height: '850px',
+          title: '预览模板',
+          src: jasTools.base.rootPath + '/jasmvvm/pages/module-pdf-viewer/web/viewer.html?oid=' + oid,
+        });
+      },
+      _formatFieldsByGroup: function (aFields) { // 将字段进行分组格式化
+        var map = {};
+        var dest = [];
+        for (var i = 0; i < aFields.length; i++) {
+          var ai = aFields[i];
+          if (!map[ai.groupIndex || ai.groupName]) {
+            dest.push({
+              groupName: ai.groupName,
+              index: ai.groupIndex || '',
+              data: [ai]
+            });
+            map[ai.groupIndex || ai.groupName] = ai;
+          } else {
+            for (var j = 0; j < dest.length; j++) {
+              var dj = dest[j];
+              if ((dj.index == ai.groupIndex) || (dj.groupName == ai.groupName)) {
+                dj.data.push(ai);
+                break;
+              }
+            }
+          }
+        }
+        return this.isArrySort(dest);
+      },
+      requestFieldsConfig: function () {
+        var that = this;
+        var url = jasTools.base.rootPath + "/functionConfiguration/getDetailByCode.do";
+        jasTools.ajax.get(url, {
+          functionCode: that.menuCode
+        }, function (data) {
+          var fieldsGrouped = that._formatFieldsByGroup(data.data.functionFieldsBoList);
+          that.isShowFiles = data.data.ifAttachment == 1;
+          that.getDetailField(fieldsGrouped);
+          that.requestDetail();
+        });
+      },
+      getDetailField: function (data) { // 组装展示的字段
+        var that = this;
+        data.forEach(function (group, index) {
+          var groupAttr = [];
+          group.data.forEach(function (item) {
+            var obj = {};
+            if (item.ifDetails == "1") {
+              obj = {
+                field: item.fieldName,
+                name: item.fieldNameCn,
+                type: item.uiType,
+                index: item.rowIndex || '',
+              };
+              groupAttr.push(obj);
+            }
+            if (item.ifPrimaryKey) {
+              that.pk = item.fieldName;
+            }
+          });
+          if (groupAttr.length > 0) {
+            that.formAttr.push({
+              groupName: group.groupName,
+              data: that.isArrySort(groupAttr)
+            });
+          }
+        });
+      },
+      requestDetail: function () { // 请求字段的详情
+        var that = this;
+        var url = jasTools.base.rootPath + "/map/commonData/" + that.menuCode + "/get.do";
+        //该接口需要入参主键，因为主键不确定，所以全部传入表单对象
+        jasTools.ajax.post(url, that.isQuery, function (data) {
+          that.formData = data.data;
+          that.bizId = that.formData[that.pk];
+          that.childId = that.formData['CHILD_ID'] || that.formData['child_id'];
+          if (that.childId) {
+            that.$refs.piclist._requestFiles(that.childId);
+            that.$refs.videolist._requestFiles(that.childId);
+            that.$refs.filelist._requestFiles(that.childId);
+          }
+        });
+      },
+      cancel: function () {
+        window.parent.jasTools.dialog.close();
+      },
+      isArrySort: function (arry) {
+        for (var unfix = arry.length - 1; unfix > 0; unfix--) {
+          for (var i = 0; i < unfix; i++) {
+            if (arry[i].index > arry[i + 1].index) {
+              var temp = arry[i];
+              arry.splice(i, 1, arry[i + 1]);
+              arry.splice(i + 1, 1, temp);
+            }
+          }
+        }
+        return arry;
+      },
+    },
+  });
+</script>
+
+</html>

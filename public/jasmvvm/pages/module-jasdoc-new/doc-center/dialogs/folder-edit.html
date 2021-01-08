@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Document</title>
+	<link rel="stylesheet" href="./../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+	<link rel="stylesheet" href="./../../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+	<link rel="stylesheet" href="./../../../../common/css/main.css">
+
+</head>
+
+<body>
+	<div id="app" v-cloak>
+		<jas-dialog-wrapper>
+			<jas-base-group-title name="文件夹信息"></jas-base-group-title>
+
+			<el-form ref="formData" :model="form" :rules="rules" label-width="120px">
+				<el-row>
+					<el-col :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
+						<el-form-item label="文件夹名称" prop="folderName">
+							<el-input v-model="form.folderName" placeholder="请输入文件夹名称" size="small" clearable>
+							</el-input>
+						</el-form-item>
+					</el-col>
+				</el-row>
+				<el-row v-show="folderType == 1">
+					<el-col :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
+						<el-form-item label="文件夹编号" prop="folderNo">
+							<el-input v-model="form.folderNo" placeholder="请输入文件夹编号" size="small" clearable></el-input>
+						</el-form-item>
+					</el-col>
+				</el-row>
+				<el-row>
+					<el-col :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
+						<el-form-item label="文件夹描述" prop="remark">
+							<el-input type="textarea" :autosize="{ minRows: 2, maxRows: 6 }" :rows="2" size="small"
+								v-model="form.remark"></el-input>
+						</el-form-item>
+					</el-col>
+				</el-row>
+			</el-form>
+			<div slot="footer">
+				<el-button size="small" @click="cancel()">取 消</el-button>
+				<el-button size="small" type="primary" @click="submit('formData')">确 定</el-button>
+			</div>
+		</jas-dialog-wrapper>
+
+	</div>
+</body>
+<script src="./../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../lib/vue/vue.js"></script>
+<script src="./../../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../../common/components/jas-components.js "></script>
+<script src="./../../../../common/js/jas-tools.js"></script>
+
+
+<script>
+	var app = new Vue({
+		el: "#app",
+		data: function () {
+			var that = this;
+			return {
+				rules: {
+					folderName: [{
+						required: true,
+						message: '该字段为必填项',
+						trigger: 'blur'
+					},
+					{
+						min: 0,
+						max: 100,
+						message: '长度在 0 到 100 个字符',
+						trigger: 'blur'
+					}
+					],
+					folderNo: [{
+						required: true,
+						message: '该字段为必填项',
+						trigger: 'blur'
+					},
+					{
+						min: 0,
+						max: 100,
+						message: '长度在 0 到 100 个字符',
+						trigger: 'blur'
+					}],
+					remark: [{
+						min: 0,
+						max: 200,
+						message: '长度在 0 到 200 个字符',
+						trigger: 'blur'
+					}]
+				},
+				parentId: '', // 是否新建文件夹功能
+				form: {
+					folderName: '',
+					remark: '',
+					folderNo: ''
+				},
+				parentFolderData: {},
+				folderType: '',
+			}
+		},
+		created: function () {
+			var that = this;
+			var param = window.jasTools.base.getParamsInUrl(location.href);
+			if (param.oid) {
+				this.oid = param.oid;
+				this.getDetailByObjectId(param.oid);
+
+			};
+			if (param.parentId) {
+				this.parentId = param.parentId;
+				this.getParentFolderByObjectId(param.parentId);
+
+			};
+		},
+		methods: {
+			cancel: function (param) {
+				window.parent.jasTools.dialog.close(param);
+			},
+			submit: function (formName) {
+				var that = this;
+				if (this.folderType != "1") {
+					this.rules.folderNo[0].required = false;
+				}
+				this.$refs[formName].validate(function (valid) {
+					if (valid) {
+						if (that.parentId) {
+							that.newFolder();
+						} else {
+							that.save();
+						}
+					}
+				});
+			},
+			save: function () {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jdbc/commonData/jasdocFolder/update.do";
+				console.log(that.form);
+				jasTools.ajax.post(url, {
+					oid: that.oid,
+					parentId: that.form.parentId,
+					folderName: that.form.folderName,
+					remark: that.form.remark,
+					folderNo: that.form.folderNo
+				}, function (data) {
+					if (data.status == 1) {
+						top.Vue.prototype.$message({
+							type: 'success',
+							message: '修改成功'
+						});
+						that.cancel(1);
+					} else {
+						top.Vue.prototype.$message({
+							type: 'error',
+							message: '修改失败'
+						});
+					}
+				});
+
+			},
+			newFolder: function () {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jdbc/commonData/jasdocFolder/save.do";
+				jasTools.ajax.post(url, {
+					parentId: this.parentId,
+					folderName: this.form.folderName,
+					remark: this.form.remark,
+					folderType: this.folderType,
+					folderNo: this.form.folderNo
+
+				}, function (data) {
+					top.Vue.prototype.$message({
+						type: 'success',
+						message: '文件夹创建成功'
+					});
+					that.cancel(1);
+				});
+			},
+			getDetailByObjectId: function (oid) {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jdbc/commonData/jasdocFolder/get.do?oid=" + oid;
+				jasTools.ajax.get(url, {}, function (data) {
+					that.form = data.data;
+					that.folderType = data.data.folderType;
+				});
+			},
+			getParentFolderByObjectId: function (oid) {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jdbc/commonData/jasdocFolder/get.do?oid=" + oid;
+				jasTools.ajax.get(url, {}, function (data) {
+					that.folderType = data.data.folderType;
+					that.form.folderNo = data.data.folderNo;
+				});
+			},
+		},
+	});
+</script>
+
+</html>

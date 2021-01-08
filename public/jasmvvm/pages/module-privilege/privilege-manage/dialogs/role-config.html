@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Document</title>
+	<link rel="stylesheet" href="./../../../../lib/font-awesome-4.7.0/css/font-awesome.css">
+	<link rel="stylesheet" href="./../../../../lib/element-ui/v2.4.1/theme-chalk/index.min.css">
+	<link rel="stylesheet" href="./../../../../common/css/main.css">
+
+	<style>
+		.is-grown>div {
+			height: 100%;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app" v-cloak>
+
+		<jas-dialog-wrapper>
+
+			<jas-two-panel-resizer layout="vertical" length="400px">
+				<template slot="closePanel" style="overflow: hidden;">
+					<div style="overflow: hidden;min-width: 200px;height:100%;display:flex;flex-direction: column;">
+
+						<jas-base-group-title name="角色列表"></jas-base-group-title>
+						<div style="flex:1;overflow: auto;">
+							<el-tree ref="orgtree" :data="orgnData" node-key="oid" default-expand-all :props="defaultProps"
+								:default-expanded-keys="[currentNodeId]" highlight-current @node-click="clicknode"
+								:expand-on-click-node="false">
+								<span class="custom-tree-node" slot-scope="scope">
+									<i class="fa fa-user" style="color:#43a0ff;" aria-hidden="true"></i>
+									<span>{{ scope.data.roleName }}</span>
+								</span>
+							</el-tree>
+						</div>
+					</div>
+				</template>
+				<div slot="mainPanel" style="background: #fff;height: 100%;">
+					<div style="padding-left:15px; height:100%;display:flex;flex-direction: column;">
+
+						<jas-base-group-title :name="mytitle"></jas-base-group-title>
+						<div style="flex:1;overflow: auto;" v-loading="loading">
+
+
+							<el-tree ref="orgtree2" v-if="isRefresh" @check-change="checkChanged" :default-checked-keys="checkedRule"
+								:data="ruleData" show-checkbox :check-strictly="true" node-key="oid" default-expand-all
+								:props="ruleProps" :expand-on-click-node="false" @node-click="clickRelanode">
+
+								<div class="custom-tree-node" slot-scope="scope">
+									<span>{{ scope.data.name }}</span>
+								</div>
+
+							</el-tree>
+						</div>
+					</div>
+				</div>
+			</jas-two-panel-resizer>
+			<div slot="footer">
+				<!-- <el-button size="small" @click="cancel()">取 消</el-button> -->
+				<el-button size="small" :disabled="but_disabled" type="primary" @click="save">保 存</el-button>
+			</div>
+		</jas-dialog-wrapper>
+
+
+	</div>
+</body>
+<script src="./../../../../lib/jquery/jquery-1.12.4.min.js"></script>
+<script src="./../../../../lib/vue/vue.js"></script>
+<script src="./../../../../lib/vue-multipane/vue-multipane.js"></script>
+
+
+<script src="./../../../../lib/element-ui/v2.4.1/index.min.js"></script>
+<script src="./../../../../common/components/jas-components.js "></script>
+<script src="./../../../../common/js/jas-tools.js"></script>
+<script>
+	var app = new Vue({
+		el: "#app",
+		data: function () {
+			return {
+				but_disabled: false,
+				loading: false,
+				orgnData: [],
+				ruleData: [],
+				currentNodeName: '',
+				isRefresh: false,
+				currentNodeId: '',
+				checkedRule: [],
+				defaultProps: {
+					label: 'roleName',
+					orgnData: 'orgnData'
+				},
+				ruleProps: {
+					label: 'name',
+					orgnData: 'orgnData'
+				},
+
+			}
+		},
+		computed: {
+			mytitle: function () {
+				return '【' + this.currentNodeName + '】的数据权限规则'
+			}
+		},
+		mounted: function () {
+			var param = window.jasTools.base.getParamsInUrl(location.href);
+			this.appId = param.appId;
+			this.businessId = param.currentNodeId;
+
+			this.requestRoleList();
+
+		},
+		methods: {
+			requestRoleList: function () {
+				var that = this;
+				var url = jasTools.base.rootPath + "/jdbc/commonData/rolePrivilege/getList.do";
+				jasTools.ajax.post(url, {
+					"appId": this.appId,
+					"privilegeId": this.businessId
+				}, function (data) {
+					console.log(data.rows)
+					that.orgnData = data.rows;
+					that.$nextTick(function () {
+						if (!that.currentNodeId) {
+							that.currentNodeId = data.rows[0].oid;
+							that.currentNodeName = data.rows[0].roleName;
+						}
+						that.$refs.orgtree.setCurrentKey(that.currentNodeId);
+
+						that.requestRuleList();
+					})
+				});
+			},
+			requestRuleList: function () {
+				var that = this;
+				that.loading = true;
+				that.checkedRule = [];
+				var url = jasTools.base.rootPath + "/jdbc/commonData/privilegeRegulationRoleRef/getList.do";
+				jasTools.ajax.post(url, {
+					"roleId": that.currentNodeId, //角色ID
+					"privilegeId": this.businessId //权限菜单ID
+				}, function (data) {
+					console.log(data.rows)
+					that.loading = false;
+					that.ruleData = data.rows;
+					var arrChecked = [];
+					data.rows.forEach(function (item) {
+						if (item.checked == 1) {
+							arrChecked.push(item.oid);
+						}
+					});
+					that.checkedRule = arrChecked;
+					that.refreshRelaTree();
+
+				});
+			},
+			checkChanged: function () {
+
+			},
+			clickRelanode: function (node, data, c) {
+				if (data.checked) {
+					this.$refs.orgtree2.setChecked(data, false, true, true, true)
+				} else {
+					this.$refs.orgtree2.setChecked(data, true, true, true, true)
+				}
+			},
+			refreshRelaTree: function () {
+				var that = this;
+				this.isRefresh = false;
+				this.$nextTick(function () {
+					that.isRefresh = true;
+				});
+			},
+			clicknode: function (node, data) {
+				var that = this;
+				// console.log(node, data)
+				that.currentNodeId = node.oid;
+				that.currentNodeName = node.roleName;
+				that.refreshRelaTree();
+				that.requestRuleList();
+				// console.log(that.checkedRule)
+			},
+			save: function () {
+				var that = this;
+				var url = jasTools.base.rootPath + "/nmpsp/regulation/saveRef.do";
+
+
+				var data = this.$refs.orgtree2.getCheckedNodes().map(function (item) {
+					return {
+						regulationId: item.oid,
+						state: item.state,
+						roleId: that.currentNodeId, //角色ID
+						privilegeId: that.businessId, //权限菜单ID						
+					};
+				});
+				that.but_disabled = true;
+				jasTools.ajax.post(url, {
+					"roleId": that.currentNodeId, //角色ID
+					"privilegeId": that.businessId, //权限菜单ID
+					"data": data
+				}, function (data) {
+					that.but_disabled = false;
+					top.Vue.prototype.$message({
+						type: 'success',
+						message: '保存成功'
+					});
+					that.cancel();
+				}, function (data) {
+					that.but_disabled = false;
+				});
+			},
+			cancel: function (param) {
+				window.parent.jasTools.dialog.close(param);
+			}
+		},
+	});
+</script>
+
+</html>
