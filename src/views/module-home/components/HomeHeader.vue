@@ -51,7 +51,7 @@
         <a style="display:block">
           <el-dropdown class="dropdown-wrapper" trigger="click" @command="handleCommand">
             <span class="el-dropdown-link">
-              <img class="user-logo" src="./../../assets/module-home/enterlogo.png">
+              <img class="user-logo" src="./../../../assets/module-home/enterlogo.png">
               <div class="userInfo">
                 <div class="username">{{username}}</div>
                 <div class="userunit">{{userunit}}</div>
@@ -117,7 +117,7 @@ export default {
 }
 .logo {
   width: 60px;
-  background: url(./../../assets/module-home/logo-meng.png) no-repeat center
+  background: url(./../../../assets/module-home/logo-meng.png) no-repeat center
     center;
   background-size: 30px;
   margin: 0 0px 0 10px;

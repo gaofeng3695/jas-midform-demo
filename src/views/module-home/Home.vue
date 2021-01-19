@@ -12,12 +12,12 @@
           <div style="flex:1;width:100%;">
 
             <el-tabs id="tabs" style="position:relative" class="tabswrapper" v-model="currentTap" type="card" @tab-remove="removeTab">
-              <el-popover ref="popover" placement="bottom" trigger="hover">
+              <!-- <el-popover ref="popover" placement="bottom" trigger="hover">
                 <el-dropdown-item @click.native="handleTabsOptions(1)">刷新当前选项卡</el-dropdown-item>
                 <el-dropdown-item @click.native="handleTabsOptions(2)">关闭当前选项卡</el-dropdown-item>
                 <el-dropdown-item @click.native="handleTabsOptions(3)">关闭其他选项卡</el-dropdown-item>
                 <el-dropdown-item @click.native="handleTabsOptions(4)">关闭所有选项卡</el-dropdown-item>
-              </el-popover>
+              </el-popover> -->
               <el-tab-pane v-for="(item) in tabs" :key="item.name" :name="item.name" :closable="item.closable">
                 <span slot="label">
                   <i v-show="currentTap == item.name" :class="item.icon||'fa fa-bookmark'"></i> {{item.title}}
@@ -44,8 +44,8 @@
   </el-container>
 </template>
 <script>
-import HomeHeader from "./HomeHeader.vue";
-import HomeSider from "./HomeSider.vue";
+import HomeHeader from "./components/HomeHeader";
+import HomeSider from "./components/HomeSider";
 export default {
   components: {
     HomeHeader,
@@ -59,6 +59,7 @@ export default {
   },
   methods: {
     clickMenu(index, oMenu) {
+      console.log(oMenu);
       var newTap = "";
       this.tabs.forEach(function (item) {
         //循环打开的标签页，判断选中的菜单是否带开过
@@ -76,7 +77,7 @@ export default {
         });
       }
       this.currentTap = index;
-      this.$router.push("/home/demo");
+      this.$router.push("/home/" + index + "?url=" + oMenu.link);
     },
     removeTab(targetName) {
       var tabs = this.tabs;

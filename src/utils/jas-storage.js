@@ -26,6 +26,13 @@ let set = (key, value) => {
     time: curTime
   }));
 };
+let baseset = (key, value) => {
+  localStorage.setItem(key, value);
+};
+let baseget = (key) => {
+  let data = localStorage.getItem(key);
+  return data
+};
 
 let get = (key, exp) => {
   let data = localStorage.getItem(key);
@@ -45,7 +52,9 @@ let remove = (key) => {
   localStorage.removeItem(key);
 };
 export default {
-  get,
-  set,
+  get: baseget,
+  set: baseset,
+  timeget: get,
+  timeset: set,
   remove
 };

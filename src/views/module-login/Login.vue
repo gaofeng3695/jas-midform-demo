@@ -76,7 +76,6 @@ export default {
           true
         )
         .then((data) => {
-          // console.log(data);
           this.$jasStorage.set("token", data.token);
           this.$jasStorage.set(
             "user",
@@ -88,9 +87,25 @@ export default {
               ),
             })
           );
-          this.$router.push("/home");
+          this._queryMenuData();
         });
       return;
+    },
+    _queryMenuData() {
+      var that = this; // 获取左侧菜单
+      this.$jasHttp
+        .get("/jasframework/privilege/privilege/getAllUserFuntion.do", {
+          menutype: "0",
+          appId: "402894a152681ba30152681e8b320003",
+          language: "zh_CN",
+        })
+        .then((data) => {
+          if (typeof data === "object" && data.length > 0) {
+            // console.log(data);
+            this.$jasStorage.set("menus", JSON.stringify(data));
+          }
+          this.$router.push("/home");
+        });
     },
   },
 };

@@ -5,7 +5,7 @@
 
       <el-scrollbar :wrap-style="{height:'calc( 100% + 17px )'}" :view-style="{height:'calc ( 100% + 17% )'}" style="height: 100% ">
         <el-menu unique-opened :default-active="currentTap" class="el-menu-vertical-demo" @select="selectMenu" :collapse="!isExpend">
-          <JasSideMenu :menus="items"></JasSideMenu>
+          <HomeSideMenu :menus="items"></HomeSideMenu>
         </el-menu>
       </el-scrollbar>
 
@@ -21,11 +21,11 @@
 
 </template>
 <script>
-import JasSideMenu from "./components/JasSideMenu";
+import HomeSideMenu from "./HomeSideMenu";
 
 export default {
   components: {
-    JasSideMenu,
+    HomeSideMenu,
   },
   data() {
     return {
@@ -78,7 +78,7 @@ export default {
               isGetResult = true;
               _icon = item.icon;
               _title = item.title;
-              _link = item.link;
+              _link = item.attributes.URL;
               _closable = item.closable !== false ? true : false;
               return;
             }
@@ -105,6 +105,8 @@ export default {
         .then((data) => {
           if (typeof data === "object" && data.length > 0) {
             that.items = that._formatMenus(data);
+            console.log(that.$router)
+            console.log('_________________________')
             if (!that.currentTap || that.currentTap == 0) {
               that.currentTap = that._getFirstMenuId(that.items);
               that.selectMenu(that.currentTap);
@@ -121,6 +123,7 @@ export default {
     },
     _formatMenus(aMenu) {
       var _aMenu = JSON.parse(JSON.stringify(aMenu));
+      var routerMenus = [];
       var switcher = function (arr) {
         if (typeof arr === "object") {
           arr.forEach(function (item) {
@@ -139,6 +142,16 @@ export default {
               } else {
                 // item.link = jasTools.base.rootPath + "/" + item.attributes.URL;
               }
+              routerMenus.push({
+                path: item.index,
+                component: (resolve) =>
+                  require([
+                    "@/views/module-home/components/HomeFrameWrap.vue",
+                  ], resolve),
+                props: (route) => ({
+                  url: route.query.url,
+                }),
+              });
             }
             item.subs = item.children;
             if (item.subs) {
@@ -148,6 +161,7 @@ export default {
         }
       };
       switcher(_aMenu);
+      this.routerMenus = routerMenus;
       return _aMenu;
     },
   },

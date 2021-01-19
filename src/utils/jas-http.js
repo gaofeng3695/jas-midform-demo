@@ -21,7 +21,7 @@ const ajax = function (type, url, oParam, isnoToken) {
     axios[_type](url, params)
       .then(res => {
         let data = res.data;
-        console.log(data)
+        // console.log(data)
         if (data.status == -1 && data.code == "402") { // token失效或者过期，会返回-1
           Vue.prototype.$confirm('登录信息失效，请重新登录', '提示', {
             type: 'warning',
