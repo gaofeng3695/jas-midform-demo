@@ -92,20 +92,27 @@ export default {
       return;
     },
     _queryMenuData() {
-      var that = this; // 获取左侧菜单
-      this.$jasHttp
-        .get("/jasframework/privilege/privilege/getAllUserFuntion.do", {
-          menutype: "0",
-          appId: "402894a152681ba30152681e8b320003",
-          language: "zh_CN",
-        })
-        .then((data) => {
-          if (typeof data === "object" && data.length > 0) {
-            // console.log(data);
-            this.$jasStorage.set("menus", JSON.stringify(data));
-          }
-          this.$router.push("/home");
-        });
+      // var that = this; // 获取左侧菜单
+      let isLocal = true;
+      if (isLocal) {
+        this.$jasStorage.set("menus", "");
+        this.$router.push("/home");
+      } else {
+        this.$jasHttp
+          .get("/jasframework/privilege/privilege/getAllUserFuntion.do", {
+            // .get("/jasframework/privilege/privilege/getAllUserFuntion.do", {
+            menutype: "0",
+            appId: "402894a152681ba30152681e8b320003",
+            language: "zh_CN",
+          })
+          .then((data) => {
+            if (typeof data === "object" && data.length > 0) {
+              // console.log(data);
+              this.$jasStorage.set("menus", JSON.stringify(data));
+            }
+            this.$router.push("/home");
+          });
+      }
     },
   },
 };

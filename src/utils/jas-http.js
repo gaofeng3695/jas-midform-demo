@@ -17,6 +17,7 @@ const ajax = function (type, url, oParam, isnoToken) {
       ...oParam
     }
   };
+  url = '/jasproxy' + url;
   return new Promise((resolve, reject) => {
     axios[_type](url, params)
       .then(res => {

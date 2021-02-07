@@ -1,24 +1,12 @@
 import Vue from 'vue';
 import Router from 'vue-router';
 import jasStorage from '@/utils/jas-storage';
+import localMenu from '@/router/menu';
+
+
+
 
 Vue.use(Router);
-
-// //解决编程式路由往同一地址跳转时会报错的情况
-// const originalPush = Router.prototype.push
-// const originalReplace = Router.prototype.replace
-// //push
-// Router.prototype.push = function push(location, onResolve, onReject) {
-//   if (onResolve || onReject) return originalPush.call(this, location, onResolve, onReject)
-//   return originalPush.call(this, location).catch(err => err)
-// }
-// //replace
-// Router.prototype.replace = function push(location, onResolve, onReject) {
-//   if (onResolve || onReject) return originalReplace.call(this, location, onResolve, onReject)
-//   return originalReplace.call(this, location).catch(err => err)
-// }
-
-
 
 let defaultRoute = [ //
   {
@@ -34,7 +22,8 @@ let defaultRoute = [ //
       // {
       //   path: 'demo',
       //   component: resolve => require(['@/views/module-page-maker/form-diy/FormDiy.vue'], resolve),
-      // }, {
+      // },
+      //{
       //   path: 'P-DW-000001',
       //   component: resolve => require(['@/views/module-home/components/HomeFrameWrap.vue'], resolve),
       //   props: (route) => ({
@@ -57,35 +46,43 @@ const router = new Router({
 const formatMenus = function () {
 
   let _aMenu = jasStorage.get("menus") && JSON.parse(jasStorage.get("menus"));
+  _aMenu = _aMenu ? _aMenu : localMenu;
+  jasStorage.set("menus", JSON.stringify(_aMenu))
 
   var routerMenus = [];
   var switcher = function (arr) {
     if (typeof arr === "object") {
+      console.log('11111111', _aMenu)
       arr.forEach(function (item) {
         item.index = item.id || "";
         item.icon = item.icon || ""; //fa-bars fa-bookmark
         item.title = item.text;
-        if (!item.attributes) {
-          item.attributes = {};
-          item.attributes.URL =
-            "jasmvvm/pages/module-jasdoc/doc-verify/doc-verify.html";
-        }
         if (item.attributes && item.attributes.URL) {
-          if (item.attributes.URL.indexOf("http") > -1) {
-            item.link = item.attributes.URL;
+          if (item.attributes.URL.indexOf(".vue") > -1) {
+            console.log(item.attributes.URL)
+            // newItem.component = resolve => require([`@/views/${item.component}`], resolve)
+
+            routerMenus.push({
+              path: item.index,
+              component: (resolve) =>
+                require([
+                  `@/views/${item.attributes.URL}`
+                  // `@/views/module-page-maker/form-diy/FormDiy.vue`
+                ], resolve),
+            });
           } else {
-            // item.link = jasTools.base.rootPath + "/" + item.attributes.URL;
+            routerMenus.push({
+              path: item.index,
+              component: (resolve) =>
+                require([
+                  "@/views/module-home/components/HomeFrameWrap.vue",
+                ], resolve),
+              props: () => ({
+                url: item.attributes.URL,
+              }),
+            });
           }
-          routerMenus.push({
-            path: item.index,
-            component: (resolve) =>
-              require([
-                "@/views/module-home/components/HomeFrameWrap.vue",
-              ], resolve),
-            props: (route) => ({
-              url: route.query.url,
-            }),
-          });
+
         }
         item.subs = item.children;
         if (item.subs) {
@@ -113,8 +110,8 @@ router.beforeEach((to, from, next) => { // 路由守卫
   //   next('/view-home'); // 去主页
   //   return;
   // }
-  // console.log(router.options.routes[2].children.length > 0)
-  if (to.path == "/home" && router.options.routes[2].children.length == 0) {
+  console.log('2222222', to, to.path, router.options.routes)
+  if (to.path.indexOf("/home") > -1 && router.options.routes[2].children.length == 0) {
     let routes = [].concat(defaultRoute);
     routes[2].children = formatMenus();
     router.addRoutes(routes);

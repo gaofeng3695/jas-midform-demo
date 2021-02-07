@@ -77,7 +77,7 @@ export default {
         });
       }
       this.currentTap = index;
-      this.$router.push("/home/" + index + "?url=" + oMenu.link);
+      this.$router.push("/home/" + index);
     },
     removeTab(targetName) {
       var tabs = this.tabs;

@@ -95,24 +95,17 @@ export default {
     },
     _queryMenuData() {
       var that = this; // 获取左侧菜单
-
-      this.$jasHttp
-        .get("/jasframework/privilege/privilege/getAllUserFuntion.do", {
-          menutype: "0",
-          appId: "402894a152681ba30152681e8b320003",
-          language: "zh_CN",
-        })
-        .then((data) => {
-          if (typeof data === "object" && data.length > 0) {
-            that.items = that._formatMenus(data);
-            console.log(that.$router)
-            console.log('_________________________')
-            if (!that.currentTap || that.currentTap == 0) {
-              that.currentTap = that._getFirstMenuId(that.items);
-              that.selectMenu(that.currentTap);
-            }
-          }
-        });
+      let _aMenu =
+        this.$jasStorage.get("menus") &&
+        JSON.parse(this.$jasStorage.get("menus"));
+      if (typeof _aMenu === "object" && _aMenu.length > 0) {
+        that.items = that._formatMenus(_aMenu);
+        if (!that.currentTap || that.currentTap == 0) {
+          that.currentTap = that._getFirstMenuId(that.items);
+          that.selectMenu(that.currentTap);
+        }
+      }
+      return;
     },
     _getFirstMenuId(items) {
       var obj = items[0];
