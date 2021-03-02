@@ -1,11 +1,11 @@
 
 <template>
-  <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+  <div>
     <jas-textarea v-if="config.type == 'textarea'" :title="config.name" :maxLength="config.maxLength || 200" v-model="_value"></jas-textarea>
-    <el-form-item v-else :ref="field + 123" :label="config.name" prop="" :rules="config && config.rules" style="margin-bottom: 15px ">
+    <el-form-item v-else :ref="field + 123" :label="config.name" prop="" :rules="config && config.rules">
       <template v-if="config.type == 'select'">
         <el-select :ref="field" v-model="_value" clearable :placeholder="'请选择'+config.name" size="small">
-          <el-option v-for="option in config.options" :key="option.key" :label="option.value" :value="option.key"></el-option>
+          <el-option v-for="option in config.options" :key="option.value" :label="option.label" :value="option.value"></el-option>
         </el-select>
       </template>
       <template v-if="config.type == 'multiSelect'">
@@ -13,7 +13,7 @@
       </template>
 
       <template v-if="config.type == 'input'">
-        <el-input :ref="field" v-model="_value" :placeholder="'请输入'+config.name" size="small" clearable></el-input>
+        <el-input :ref="field" v-model="_value" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
       </template>
       <template v-if="config.type == 'number'">
         <el-input-number :ref="field" v-model="_value" :precision="precision(config.precision)" :step="1" :max="config.max || 999999" controls-position="right" clearable :placeholder="'请输入'+config.name" size="small"></el-input-number>
@@ -22,7 +22,7 @@
         <el-date-picker clearable value-format="yyyy-MM-dd" type="date" :placeholder="'请选择'+config.name" @change="fieldChanged(item.field)" :ref="field" v-model="_value" size="small" style="width: 100%;"></el-date-picker>
       </template>
     </el-form-item>
-  </el-col>
+  </div>
 </template>
 <script>
 /* 
@@ -64,5 +64,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.el-form-item {
+  margin-bottom: 12px;
+}
+.el-select {
+  width: 100%;
+}
 </style>  
 
