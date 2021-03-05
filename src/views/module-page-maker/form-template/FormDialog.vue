@@ -1,9 +1,9 @@
 <template>
   <el-dialog :title="formform.formtitle" :visible.sync="visible">
     <div>
-      <el-form label-position="right" label-width="100px" style="overflow:hidden;">
+      <el-form :model="form" label-position="right" label-width="100px" style="overflow:hidden;">
         <el-row :gutter="20">
-          <el-col v-for="item in formitems" :key="item.field" :xs="24/formform.col" :sm="24/formform.col" :md="24/formform.col" :lg="24/formform.col" :xl="24/formform.col">
+          <el-col v-for="item in formitems" :key="item.field" :xs="colNum(item)" :sm="colNum(item)" :md="colNum(item)" :lg="colNum(item)" :xl="colNum(item)">
             <JasFormItem v-model="form[item.field]" :config="item"></JasFormItem>
           </el-col>
         </el-row>
@@ -64,6 +64,11 @@ export default {
     get() {
       this.formitems = JSON.parse(this.$jasStorage.get("formitems"));
       this.formform = JSON.parse(this.$jasStorage.get("formform"));
+    },
+
+    colNum(item) {
+      if (item.type == "moduletitle") return 24;
+      return 24 / this.formform.col;
     },
   },
 };

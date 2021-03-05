@@ -8,9 +8,9 @@
       <div class="leftbox">
         <div class="container">
           <draggable class="dragArea list-group" :list="typelist" :group="{ name: 'people', pull: 'clone', put: false }" :clone="createNewItem" @change="log">
-            <div class="list-group-item01" v-for="element in typelist" :key="element.type">
+            <div class="list-group-item01" v-for="element in typelist" :key="element.value">
               <div class="item">
-                {{ element.name }}
+                {{ element.label }}
 
               </div>
             </div>
@@ -19,7 +19,7 @@
       </div>
       <div class="centerbox">
         <div class="container">
-          <el-form label-position="left" label-width="80px" style="width:100%;height:100%;overflow:auto;">
+          <el-form label-position="left" label-width="120px" style="width:100%;height:100%;overflow:auto;">
             <draggable class="dragArea list-group" :list="formitems" group="people" @change="log">
               <div class="list-group-item" v-for="item in formitems" :key="item.field">
                 <div class="item2wrap">
@@ -46,14 +46,14 @@
 
           <el-tabs>
             <el-tab-pane label="属性配置">
-              <el-form label-position="left" label-width="60px">
-                <el-form-item v-for="(item,key) in activeItem" :key="key" :label="key">
-                  <el-input v-model="activeItem[key]" size="small" clearable></el-input>
-                </el-form-item>
+              <el-form :model="activeItem" label-position="left" label-width="90px">
+                <el-col v-for="item in formItemAttrsObj[activeItem.type]" :key="item.field" :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
+                  <JasFormItem v-model="activeItem[item.field]" :config="item"></JasFormItem>
+                </el-col>
               </el-form>
             </el-tab-pane>
             <el-tab-pane label="表单配置">
-              <el-form label-position="left" label-width="60px">
+              <el-form label-position="left" label-width="90px">
                 <el-row :gutter="20">
                   <el-col v-for="item in formformConfs" :key="item.field" :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
                     <JasFormItem v-model="formform[item.field]" :config="item"></JasFormItem>
@@ -68,7 +68,7 @@
 
     </div>
 
-    <FormDialog v-model="outerVisible"></FormDialog>
+    <FormDialog v-model="outerVisible" v-if="outerVisible"></FormDialog>
 
   </div>
 </template>
@@ -77,6 +77,8 @@
 import draggable from "vuedraggable";
 import JasFormItem from "@/components/base/JasFormItem";
 import FormDialog from "@/views/module-page-maker/form-template/FormDialog";
+import formItemAttrsObj from "@/views/module-page-maker/form-diy/config/formItemAttrsObj";
+import formItemTypesArr from "@/views/module-page-maker/form-diy/config/formItemTypesArr";
 
 export default {
   components: {
@@ -89,23 +91,30 @@ export default {
       form: {},
       outerVisible: false,
       activeItem: null,
-      idGlobal: 11,
-      typelist: [
-        { name: "单行文本", type: "input" },
-        { name: "时间日期", type: "date" },
-        { name: "下拉单选框", type: "select" },
-        { name: "多行文本", type: "textarea" },
-        { name: "数字", type: " number" },
-        { name: "下拉多选框", type: "multiSelect" },
+      idGlobal: 1,
+      typelist: formItemTypesArr,
+      formItemAttrsObj: formItemAttrsObj,
+      formitems: [
+        {
+          name: "基础信息",
+          type: "moduletitle",
+          field: "field",
+          required: false,
+        },
+        { name: "姓名", type: "input", field: "name", required: false },
       ],
-      formitems: [{ name: "姓名", type: "input", field: "name" }],
       formform: {
         formtitle: "新增表单",
         col: 2,
         buttonNames: "确定、上传、取消",
       },
       formformConfs: [
-        { name: "标题", field: "formtitle", type: "input", options: "" },
+        {
+          name: "标题",
+          field: "formtitle",
+          type: "input",
+          options: "",
+        },
         {
           name: "列数",
           field: "col",
@@ -139,20 +148,23 @@ export default {
       this.outerVisible = true;
     },
     createNewItem(item) {
-      var newItem = {
-        name: item.name,
-        type: item.type,
-        field: "name" + this.idGlobal++,
+      let num = this.idGlobal++;
+      let newItem = {
+        name: item.label + num,
+        type: item.value,
+        field: "field" + num,
+        required: false,
       };
       this.activeItem = newItem;
       return newItem;
     },
     copyItem(item) {
-      let index = this.formitems.indexOf(item);
+      let num = this.idGlobal++;
       let newItem = {
         ...item,
-        field: "name" + this.idGlobal++,
+        field: "field" + num,
       };
+      let index = this.formitems.indexOf(item);
       this.formitems.splice(index + 1, 0, newItem);
       this.activeItem = newItem;
     },

@@ -1,25 +1,25 @@
 
 <template>
   <div>
-    <jas-textarea v-if="config.type == 'textarea'" :title="config.name" :maxLength="config.maxLength || 200" v-model="_value"></jas-textarea>
-    <el-form-item v-else :ref="field + 123" :label="config.name" prop="" :rules="config && config.rules">
+    <jas-textarea v-if="config.type == 'textarea'" :title="config.name" :length="config.length || 200" v-model="_value"></jas-textarea>
+    <JasBaseGroupTitle v-else-if="config.type == 'moduletitle'" :name="config.name"></JasBaseGroupTitle>
+    <el-form-item v-else :ref="config.field + 123" :label="config.name" :prop="config.field" :rules="config && config.rules">
       <template v-if="config.type == 'select'">
-        <el-select :ref="field" v-model="_value" clearable :placeholder="'请选择'+config.name" size="small">
+        <el-select :ref="config.field" v-model="_value" clearable :placeholder="'请选择'+config.name" size="small">
           <el-option v-for="option in config.options" :key="option.value" :label="option.label" :value="option.value"></el-option>
         </el-select>
       </template>
       <template v-if="config.type == 'multiSelect'">
-        <jas-base-el-multi-select :ref="field" v-model="_value" :item="item" :options="config.options"></jas-base-el-multi-select>
+        <jas-base-el-multi-select :ref="config.field" v-model="_value" :item="item" :options="config.options"></jas-base-el-multi-select>
       </template>
-
       <template v-if="config.type == 'input'">
-        <el-input :ref="field" v-model="_value" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
+        <el-input :ref="config.field" v-model="_value" :maxlength="config.maxlength" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
       </template>
       <template v-if="config.type == 'number'">
-        <el-input-number :ref="field" v-model="_value" :precision="precision(config.precision)" :step="1" :max="config.max || 999999" controls-position="right" clearable :placeholder="'请输入'+config.name" size="small"></el-input-number>
+        <el-input-number :ref="config.field" v-model="_value" :precision="precision(config.precision)" :step="1" :max="config.max || 999999" :min="config.min || 0" controls-position="right" clearable :placeholder="config.placeholder || '请输入'+config.name" size="small" style="text-align:left;"></el-input-number>
       </template>
       <template v-if="config.type == 'date'">
-        <el-date-picker clearable value-format="yyyy-MM-dd" type="date" :placeholder="'请选择'+config.name" @change="fieldChanged(item.field)" :ref="field" v-model="_value" size="small" style="width: 100%;"></el-date-picker>
+        <el-date-picker clearable value-format="yyyy-MM-dd" type="date" :placeholder="'请选择'+config.name" @change="fieldChanged(item.field)" :ref="config.field" v-model="_value" size="small" style="width: 100%;"></el-date-picker>
       </template>
     </el-form-item>
   </div>
@@ -29,22 +29,30 @@
 name
 field
 type
-maxLength
-rules
+rule
+regexp
+required
 options
 precision
+maxlength
 max
+min
+step
 */
+import JasBaseGroupTitle from "@/components/base/JasBaseGroupTitle";
+import formItemRulesArr from "@/views/module-page-maker/form-diy/config/formItemRulesArr";
+
 export default {
   name: "JasFormItem",
+  components: {
+    JasBaseGroupTitle,
+  },
   props: {
     value: {},
-    field: {},
     config: {
       type: Object,
     },
   },
-  components: {},
   data() {
     return {};
   },
@@ -58,17 +66,57 @@ export default {
       },
     },
   },
+  watch: {
+    "config.required": function () {
+      this.formatRules();
+    },
+    "config.regexp": function () {
+      this.formatRules();
+    },
+  },
+  created() {
+    this.formatRules();
+  },
   mounted() {},
-  methods: {},
+  methods: {
+    formatRules() {
+      this.config.required = this.config.required || false;
+      this.$set(this.config, "rules", []);
+      this.config.required &&
+        this.config.rules.push({
+          required: true,
+          message: this.config.name + "为必填项",
+        });
+
+      let rule = formItemRulesArr.filter(
+        (item) => item.value == this.config.regexp
+      );
+      console.log(rule[0]);
+      rule.length && this.config.rules.push(rule[0]);
+    },
+    precision: function (value) {
+      if (!value) return 0;
+      return value;
+    },
+  },
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .el-form-item {
   margin-bottom: 12px;
 }
 .el-select {
   width: 100%;
+}
+.el-input-number {
+  width: 100%;
+}
+.el-input-number .el-input .el-input__inner {
+  text-align: left;
+}
+.el-form-item__error {
+  top: 90%;
 }
 </style>  
 

@@ -71,7 +71,7 @@ export default {
             appId: "402894a152681ba30152681e8b320003",
             loginNum: this.ruleForm.userid || "superadmin",
             logintype: "0",
-            pass: this.encryption(this.ruleForm.pass || "1qazxsw2"),
+            pass: this.encryption(this.ruleForm.pass || "Bjg%rj1q"),
           },
           true
         )
