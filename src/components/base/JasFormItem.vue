@@ -2,18 +2,19 @@
 <template>
   <div>
     <jas-textarea v-if="config.type == 'textarea'" :title="config.name" :length="config.length || 200" v-model="_value"></jas-textarea>
-    <JasBaseGroupTitle v-else-if="config.type == 'moduletitle'" :name="config.name"></JasBaseGroupTitle>
+    <JasBaseGroupTitle v-else-if="config.type == 'grouptitle'" :name="config.name"></JasBaseGroupTitle>
+    <JasBaseModuleTitle v-else-if="config.type == 'moduleTitle'" :name="config.name"></JasBaseModuleTitle>
     <el-form-item v-else :ref="config.field + 123" :label="config.name" :prop="config.field" :rules="config && config.rules">
+      <template v-if="config.type == 'input'">
+        <el-input :ref="config.field" v-model="_value" :maxlength="config.maxlength" :disabled="config.disabled" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
+      </template>
       <template v-if="config.type == 'select'">
-        <el-select :ref="config.field" v-model="_value" clearable :placeholder="'请选择'+config.name" size="small">
+        <el-select :ref="config.field" v-model="_value" clearable :disabled="config.disabled" :placeholder="config.placeholder || '请选择'+config.name" size="small">
           <el-option v-for="option in config.options" :key="option.value" :label="option.label" :value="option.value"></el-option>
         </el-select>
       </template>
       <template v-if="config.type == 'multiSelect'">
         <jas-base-el-multi-select :ref="config.field" v-model="_value" :item="item" :options="config.options"></jas-base-el-multi-select>
-      </template>
-      <template v-if="config.type == 'input'">
-        <el-input :ref="config.field" v-model="_value" :maxlength="config.maxlength" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
       </template>
       <template v-if="config.type == 'number'">
         <el-input-number :ref="config.field" v-model="_value" :precision="precision(config.precision)" :step="1" :max="config.max || 999999" :min="config.min || 0" controls-position="right" clearable :placeholder="config.placeholder || '请输入'+config.name" size="small" style="text-align:left;"></el-input-number>
@@ -40,12 +41,14 @@ min
 step
 */
 import JasBaseGroupTitle from "@/components/base/JasBaseGroupTitle";
+import JasBaseModuleTitle from "@/components/base/JasBaseModuleTitle";
 import formItemRulesArr from "@/views/module-page-maker/form-diy/config/formItemRulesArr";
 
 export default {
   name: "JasFormItem",
   components: {
     JasBaseGroupTitle,
+    JasBaseModuleTitle,
   },
   props: {
     value: {},
@@ -75,10 +78,21 @@ export default {
     },
   },
   created() {
+    this.formatConfig();
     this.formatRules();
   },
   mounted() {},
   methods: {
+    formatConfig() {
+      if (this.config.type == "select") {
+        if (this.config.optnCode) {
+          let arr = eval(this.config.optnCode);
+          if (typeof arr == "object") {
+            this.config.options = eval(this.config.optnCode);
+          }
+        }
+      }
+    },
     formatRules() {
       this.config.required = this.config.required || false;
       this.$set(this.config, "rules", []);
@@ -105,6 +119,7 @@ export default {
 <style lang="scss">
 .el-form-item {
   margin-bottom: 12px;
+  min-height: 41px;
 }
 .el-select {
   width: 100%;

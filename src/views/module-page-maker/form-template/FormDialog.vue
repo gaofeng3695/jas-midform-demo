@@ -68,6 +68,7 @@ export default {
 
     colNum(item) {
       if (item.type == "moduletitle") return 24;
+      if (item.type == "grouptitle") return 24;
       return 24 / this.formform.col;
     },
   },

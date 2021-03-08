@@ -45,14 +45,14 @@
         <div class="container rightcon">
 
           <el-tabs>
-            <el-tab-pane label="属性配置">
+            <el-tab-pane label="属性配置" class="tabBox">
               <el-form :model="activeItem" label-position="left" label-width="90px">
                 <el-col v-for="item in formItemAttrsObj[activeItem.type]" :key="item.field" :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
                   <JasFormItem v-model="activeItem[item.field]" :config="item"></JasFormItem>
                 </el-col>
               </el-form>
             </el-tab-pane>
-            <el-tab-pane label="表单配置">
+            <el-tab-pane label="表单配置" class="tabBox">
               <el-form label-position="left" label-width="90px">
                 <el-row :gutter="20">
                   <el-col v-for="item in formformConfs" :key="item.field" :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
@@ -95,13 +95,13 @@ export default {
       typelist: formItemTypesArr,
       formItemAttrsObj: formItemAttrsObj,
       formitems: [
-        {
-          name: "基础信息",
-          type: "moduletitle",
-          field: "field",
-          required: false,
-        },
-        { name: "姓名", type: "input", field: "name", required: false },
+        // {
+        //   name: "基础信息",
+        //   type: "grouptitle",
+        //   field: "field",
+        //   required: false,
+        // },
+        { name: "姓名", type: "select", field: "name", required: false },
       ],
       formform: {
         formtitle: "新增表单",
@@ -181,7 +181,7 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .allwrap {
   display: flex;
   flex-direction: column;
@@ -218,11 +218,23 @@ export default {
   .rightbox {
     width: 350px;
     padding: 10px;
+
+    .el-tabs {
+      height: 100%;
+      .el-tabs__content {
+        height: calc(100% - 50px);
+        overflow: auto;
+      }
+      .tabBox {
+        padding-right: 10px;
+      }
+    }
+
     .el-form-item {
       margin-bottom: 6px;
     }
     .rightcon {
-      padding: 10px;
+      padding: 10px 0 10px 10px;
     }
   }
 }
