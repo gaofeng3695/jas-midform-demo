@@ -4,11 +4,11 @@ import formItemRulesArr from "@/views/module-page-maker/form-diy/config/formItem
 
 let oBaseTitle = {
   name: "基础信息",
-  type: "moduleTitle",
+  type: "moduletitle",
 };
 let oLimitTitle = {
   name: "验证信息",
-  type: "moduleTitle",
+  type: "moduletitle",
 };
 
 let oName = {
@@ -47,6 +47,24 @@ let oDisabled = {
     value: false
   }]
 };
+let oWidthRate = {
+  name: "宽度占比",
+  field: "widthRate",
+  type: "select",
+  options: [{
+    label: '整行',
+    value: 1
+  }, {
+    label: '1/2',
+    value: 0.5
+  }, {
+    label: '1/3',
+    value: 1 / 3
+  }, {
+    label: '1/4',
+    value: 0.25
+  }]
+};
 let oRequired = {
   name: "必填",
   field: "required",
@@ -75,9 +93,9 @@ let oOptnCode = {
   field: "optnCode",
   // placeholder: '输入值必须可被代码解析',
   placeholder: "例如：[{label:'是',value: true}]",
-  type: "input"
+  type: "textarea"
 };
-let baseAttrs = [oName, oType, oField, oDisabled, oPlaceholder];
+let baseAttrs = [oBaseTitle, oName, oType, oField, oDisabled, oPlaceholder, oWidthRate];
 
 const moduletitle = [ //
   oBaseTitle, oName, oType
@@ -86,7 +104,6 @@ const grouptitle = [ //
   oBaseTitle, oName, oType
 ];
 const input = [ //
-  oBaseTitle,
   ...baseAttrs,
   oLimitTitle,
   oRequired,
@@ -97,18 +114,17 @@ const date = [
   ...baseAttrs,
 ];
 const select = [
-  oBaseTitle,
   ...baseAttrs,
   oLimitTitle,
   oRequired,
   {
     name: "选项信息",
-    type: "moduleTitle",
+    type: "moduletitle",
   },
   oOptnCode
 ];
 const textarea = [
-  ...baseAttrs,
+  ...baseAttrs, oLimitTitle, oRequired, oMaxlength,
 
 ];
 const number = [

@@ -1,13 +1,16 @@
 
 <template>
   <div>
-    <jas-textarea v-if="config.type == 'textarea'" :title="config.name" :length="config.length || 200" v-model="_value"></jas-textarea>
-    <JasBaseGroupTitle v-else-if="config.type == 'grouptitle'" :name="config.name"></JasBaseGroupTitle>
-    <JasBaseModuleTitle v-else-if="config.type == 'moduleTitle'" :name="config.name"></JasBaseModuleTitle>
+    <JasBaseGroupTitle v-if="config.type == 'grouptitle'" :name="config.name"></JasBaseGroupTitle>
+    <JasBaseModuleTitle v-else-if="config.type == 'moduletitle'" :name="config.name"></JasBaseModuleTitle>
     <el-form-item v-else :ref="config.field + 123" :label="config.name" :prop="config.field" :rules="config && config.rules">
       <template v-if="config.type == 'input'">
         <el-input :ref="config.field" v-model="_value" :maxlength="config.maxlength" :disabled="config.disabled" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
       </template>
+      <template v-if="config.type == 'textarea'">
+        <el-input class="jastextarea" v-model.trim="_value" :maxlength="config.maxlength" :ref="config.field" type="textarea" :autosize="{ minRows: 2, maxRows: 6 }" :rows="2" :disabled="config.disabled" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
+      </template>
+
       <template v-if="config.type == 'select'">
         <el-select :ref="config.field" v-model="_value" clearable :disabled="config.disabled" :placeholder="config.placeholder || '请选择'+config.name" size="small">
           <el-option v-for="option in config.options" :key="option.value" :label="option.label" :value="option.value"></el-option>
@@ -40,6 +43,7 @@ max
 min
 step
 */
+// import JasBaseElTextarea from "@/components/base/JasBaseElTextarea";
 import JasBaseGroupTitle from "@/components/base/JasBaseGroupTitle";
 import JasBaseModuleTitle from "@/components/base/JasBaseModuleTitle";
 import formItemRulesArr from "@/views/module-page-maker/form-diy/config/formItemRulesArr";
@@ -47,6 +51,7 @@ import formItemRulesArr from "@/views/module-page-maker/form-diy/config/formItem
 export default {
   name: "JasFormItem",
   components: {
+    // JasBaseElTextarea,
     JasBaseGroupTitle,
     JasBaseModuleTitle,
   },
@@ -99,13 +104,12 @@ export default {
       this.config.required &&
         this.config.rules.push({
           required: true,
-          message: this.config.name + "为必填项",
+          message: "必填",
         });
 
       let rule = formItemRulesArr.filter(
         (item) => item.value == this.config.regexp
       );
-      console.log(rule[0]);
       rule.length && this.config.rules.push(rule[0]);
     },
     precision: function (value) {
@@ -130,8 +134,17 @@ export default {
 .el-input-number .el-input .el-input__inner {
   text-align: left;
 }
+.el-textarea {
+  padding: 3px 0;
+}
 .el-form-item__error {
-  top: 90%;
+  // top: 90%;
+  padding-top: 0px;
+}
+.el-textarea__inner {
+  // color: red;
+  font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", Arial, sans-serif;
 }
 </style>  
 

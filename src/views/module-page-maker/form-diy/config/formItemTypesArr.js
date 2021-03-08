@@ -1,4 +1,7 @@
 export default [{
+    label: "分组标题",
+    value: "grouptitle"
+  }, {
     label: "模块标题",
     value: "moduletitle"
   },
