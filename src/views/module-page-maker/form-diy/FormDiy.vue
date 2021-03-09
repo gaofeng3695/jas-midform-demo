@@ -101,7 +101,7 @@ export default {
         //   field: "field",
         //   required: false,
         // },
-        { name: "姓名", type: "select", field: "name", required: false },
+        { name: "姓名", type: "input", field: "name", required: "0" },
       ],
       formform: {
         formtitle: "新增表单",
@@ -153,7 +153,7 @@ export default {
         name: item.label + num,
         type: item.value,
         field: "field" + num,
-        required: false,
+        required: "0",
       };
       this.activeItem = newItem;
       return newItem;
@@ -169,6 +169,10 @@ export default {
       this.activeItem = newItem;
     },
     deleteItem(item) {
+      if (this.formitems.length == 1) {
+        this.$message.error("无法删除最后一个");
+        return;
+      }
       let index = this.formitems.indexOf(item);
       this.formitems.splice(index, 1);
       if (this.formitems.length > 0) {

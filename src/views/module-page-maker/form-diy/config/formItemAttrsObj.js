@@ -14,20 +14,26 @@ let oLimitTitle = {
 let oName = {
   name: "标题名",
   field: "name",
-  required: true,
+  required: '1',
   type: "input",
 };
 let oType = {
   name: "组件类别",
   field: "type",
   type: "select",
-  required: true,
+  required: '1',
   options: formItemTypesArr,
 };
 let oField = {
   name: "字段名",
   field: "field",
-  required: true,
+  required: '1',
+  type: "input"
+};
+let oDefaultVal = {
+  name: "默认值",
+  field: "defaultVal",
+  required: '0',
   type: "input"
 };
 let oPlaceholder = {
@@ -39,12 +45,13 @@ let oDisabled = {
   name: "冻结",
   field: "disabled",
   type: "select",
+  defaultVal: '0',
   options: [{
     label: '是',
-    value: true
+    value: '1'
   }, {
     label: '否',
-    value: false
+    value: '0'
   }]
 };
 let oWidthRate = {
@@ -71,10 +78,10 @@ let oRequired = {
   type: "select",
   options: [{
     label: '是',
-    value: true
+    value: '1'
   }, {
     label: '否',
-    value: false
+    value: '0'
   }]
 };
 let oMaxlength = {
@@ -91,17 +98,24 @@ let oRegexp = {
 let oOptnCode = {
   name: "选项代码",
   field: "optnCode",
+  defaultVal: JSON.stringify([{
+    label: '是',
+    value: '1'
+  }, {
+    label: '否',
+    value: '0'
+  }]),
   // placeholder: '输入值必须可被代码解析',
   placeholder: "例如：[{label:'是',value: true}]",
   type: "textarea"
 };
-let baseAttrs = [oBaseTitle, oName, oType, oField, oDisabled, oPlaceholder, oWidthRate];
+let baseAttrs = [oBaseTitle, oName, oType, oField, oDefaultVal, oDisabled, oPlaceholder, oWidthRate];
 
 const moduletitle = [ //
-  oBaseTitle, oName, oType
+  oBaseTitle, oName, oType, oWidthRate
 ];
 const grouptitle = [ //
-  oBaseTitle, oName, oType
+  oBaseTitle, oName, oType, oWidthRate
 ];
 const input = [ //
   ...baseAttrs,
@@ -124,8 +138,10 @@ const select = [
   oOptnCode
 ];
 const textarea = [
-  ...baseAttrs, oLimitTitle, oRequired, oMaxlength,
-
+  ...baseAttrs, oLimitTitle, oRequired, {
+    ...oMaxlength,
+    defaultVal: 200,
+  },
 ];
 const number = [
   ...baseAttrs,

@@ -5,14 +5,14 @@
     <JasBaseModuleTitle v-else-if="config.type == 'moduletitle'" :name="config.name"></JasBaseModuleTitle>
     <el-form-item v-else :ref="config.field + 123" :label="config.name" :prop="config.field" :rules="config && config.rules">
       <template v-if="config.type == 'input'">
-        <el-input :ref="config.field" v-model="_value" :maxlength="config.maxlength" :disabled="config.disabled" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
+        <el-input :ref="config.field" v-model.trim="_value" :maxlength="config.maxlength" :disabled="isTrue(config.disabled)" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
       </template>
       <template v-if="config.type == 'textarea'">
-        <el-input class="jastextarea" v-model.trim="_value" :maxlength="config.maxlength" :ref="config.field" type="textarea" :autosize="{ minRows: 2, maxRows: 6 }" :rows="2" :disabled="config.disabled" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
+        <el-input class="jastextarea" v-model.trim="_value" :maxlength="config.maxlength" :ref="config.field" type="textarea" :autosize="{ minRows: 2, maxRows: 6 }" :rows="2" :disabled="isTrue(config.disabled)" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
       </template>
 
       <template v-if="config.type == 'select'">
-        <el-select :ref="config.field" v-model="_value" clearable :disabled="config.disabled" :placeholder="config.placeholder || '请选择'+config.name" size="small">
+        <el-select :ref="config.field" v-model.trim="_value" clearable :disabled="isTrue(config.disabled)" :placeholder="config.placeholder || '请选择'+config.name" size="small">
           <el-option v-for="option in config.options" :key="option.value" :label="option.label" :value="option.value"></el-option>
         </el-select>
       </template>
@@ -43,7 +43,6 @@ max
 min
 step
 */
-// import JasBaseElTextarea from "@/components/base/JasBaseElTextarea";
 import JasBaseGroupTitle from "@/components/base/JasBaseGroupTitle";
 import JasBaseModuleTitle from "@/components/base/JasBaseModuleTitle";
 import formItemRulesArr from "@/views/module-page-maker/form-diy/config/formItemRulesArr";
@@ -51,7 +50,6 @@ import formItemRulesArr from "@/views/module-page-maker/form-diy/config/formItem
 export default {
   name: "JasFormItem",
   components: {
-    // JasBaseElTextarea,
     JasBaseGroupTitle,
     JasBaseModuleTitle,
   },
@@ -86,8 +84,20 @@ export default {
     this.formatConfig();
     this.formatRules();
   },
-  mounted() {},
+  mounted() {
+    if (
+      this.config.defaultVal !== null &&
+      this.config.defaultVal !== undefined &&
+      this.config.defaultVal !== ""
+    ) {
+      this.$emit("input", this.config.defaultVal);
+    }
+  },
   methods: {
+    isTrue(val) {
+      if (val == 0 || val == undefined || val == null) return false;
+      return true;
+    },
     formatConfig() {
       if (this.config.type == "select") {
         if (this.config.optnCode) {
@@ -101,7 +111,7 @@ export default {
     formatRules() {
       this.config.required = this.config.required || false;
       this.$set(this.config, "rules", []);
-      this.config.required &&
+      this.isTrue(this.config.required) &&
         this.config.rules.push({
           required: true,
           message: "必填",
