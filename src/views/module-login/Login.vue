@@ -64,31 +64,33 @@ export default {
       return escape(_strTarget);
     },
     submitForm() {
-      this.$jasHttp
-        .post(
-          "/jasframework/login/login.do",
-          {
-            appId: "402894a152681ba30152681e8b320003",
-            loginNum: this.ruleForm.userid || "superadmin",
-            logintype: "0",
-            pass: this.encryption(this.ruleForm.pass || "Bjg%rj1q"),
-          },
-          true
-        )
-        .then((data) => {
-          this.$jasStorage.set("token", data.token);
-          this.$jasStorage.set(
-            "user",
-            JSON.stringify({
-              ...data.user,
-              unitName: data.user.unitName.substr(
-                data.user.unitName.lastIndexOf(">") + 1,
-                data.user.unitName.length
-              ),
-            })
-          );
-          this._queryMenuData();
-        });
+      this._queryMenuData();
+      0 &&
+        this.$jasHttp
+          .post(
+            "/jasframework/login/login.do",
+            {
+              appId: "402894a152681ba30152681e8b320003",
+              loginNum: this.ruleForm.userid || "superadmin",
+              logintype: "0",
+              pass: this.encryption(this.ruleForm.pass || "Bjg%rj1q"),
+            },
+            true
+          )
+          .then((data) => {
+            this.$jasStorage.set("token", data.token);
+            this.$jasStorage.set(
+              "user",
+              JSON.stringify({
+                ...data.user,
+                unitName: data.user.unitName.substr(
+                  data.user.unitName.lastIndexOf(">") + 1,
+                  data.user.unitName.length
+                ),
+              })
+            );
+            this._queryMenuData();
+          });
       return;
     },
     _queryMenuData() {

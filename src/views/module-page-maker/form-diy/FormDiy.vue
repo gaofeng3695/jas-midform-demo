@@ -1,13 +1,19 @@
 <template>
   <div class="allwrap">
     <div class="btnwrap">
-      <el-button size="mini" type="primary" @click="preview">预览</el-button>
+      <div style="flex:1;">
+        <JasBaseModuleTitle :name="formform.formtitle" />
+      </div>
+      <div>
+        <el-button size="mini" type="primary" @click="save">保存</el-button>
+        <el-button size="mini" type="primary" @click="preview">预览</el-button>
+      </div>
     </div>
     <div class="line"></div>
     <div class="formDiy">
       <div class="leftbox">
         <div class="container">
-          <draggable class="dragArea list-group" :list="typelist" :group="{ name: 'people', pull: 'clone', put: false }" :clone="createNewItem" @change="log">
+          <draggable class="dragArea list-group" :list="typelist" :group="{ name: 'people', pull: 'clone', put: false }" :clone="createNewItem">
             <div class="list-group-item01" v-for="element in typelist" :key="element.value">
               <div class="item">
                 {{ element.label }}
@@ -20,7 +26,7 @@
       <div class="centerbox">
         <div class="container">
           <el-form label-position="left" label-width="120px" style="width:100%;height:100%;overflow:auto;">
-            <draggable class="dragArea list-group" :list="formitems" group="people" @change="log">
+            <draggable class="dragArea list-group" :list="formitems" group="people">
               <div class="list-group-item" v-for="item in formitems" :key="item.field">
                 <div class="item2wrap">
                   <div class="item2" @click="activeItem =item" :class="activeItem == item ? 'active' : ''">
@@ -46,7 +52,7 @@
 
           <el-tabs>
             <el-tab-pane label="属性配置" class="tabBox">
-              <el-form :model="activeItem" label-position="left" label-width="90px">
+              <el-form v-if="isReForm" :model="activeItem" label-position="left" label-width="90px">
                 <el-col v-for="item in formItemAttrsObj[activeItem.type]" :key="item.field" :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
                   <JasFormItem v-model="activeItem[item.field]" :config="item"></JasFormItem>
                 </el-col>
@@ -79,15 +85,20 @@ import JasFormItem from "@/components/base/JasFormItem";
 import FormDialog from "@/views/module-page-maker/form-template/FormDialog";
 import formItemAttrsObj from "@/views/module-page-maker/form-diy/config/formItemAttrsObj";
 import formItemTypesArr from "@/views/module-page-maker/form-diy/config/formItemTypesArr";
-
+import JasBaseModuleTitle from "@/components/base/JasBaseModuleTitle";
 export default {
   components: {
     draggable,
+    JasBaseModuleTitle,
     JasFormItem,
     FormDialog,
   },
+  props: {
+    formid: {},
+  },
   data() {
     return {
+      isReForm: true,
       form: {},
       outerVisible: false,
       activeItem: null,
@@ -101,12 +112,13 @@ export default {
         //   field: "field",
         //   required: false,
         // },
-        { name: "姓名", type: "input", field: "name", required: "0" },
+        { name: "姓名", type: "number", field: "name", required: "0" },
       ],
       formform: {
         formtitle: "新增表单",
         col: 2,
         buttonNames: "确定、上传、取消",
+        createTime: new Date().getTime(),
       },
       formformConfs: [
         {
@@ -136,13 +148,39 @@ export default {
     };
   },
   created() {
+    if (this.formid && localStorage.getItem(this.formid)) {
+      let oForm = JSON.parse(localStorage.getItem(this.formid) || {});
+      this.formform = oForm.formform || this.formform;
+      this.formitems = oForm.formitems || this.formitems;
+    }
     this.activeItem = this.formitems[0];
   },
-  methods: {
-    log: function (evt) {
-      window.console.log(evt);
+  watch: {
+    activeItem() {
+      this.isReForm = false;
+      this.$nextTick(() => {
+        this.isReForm = true;
+      });
     },
-    preview: function () {
+  },
+  methods: {
+    save() {
+      let formList = JSON.parse(localStorage.getItem("formList") || "[]");
+      var formId = this.formform.formtitle;
+      if (formList.indexOf(formId) == -1) {
+        //新表单
+        formList.push(formId);
+        localStorage.setItem("formList", JSON.stringify(formList));
+      }
+      localStorage.setItem(
+        formId,
+        JSON.stringify({
+          formform: this.formform,
+          formitems: this.formitems,
+        })
+      );
+    },
+    preview() {
       this.$jasStorage.set("formitems", JSON.stringify(this.formitems));
       this.$jasStorage.set("formform", JSON.stringify(this.formform));
       this.outerVisible = true;
@@ -191,7 +229,8 @@ export default {
   flex-direction: column;
   height: 100%;
   .btnwrap {
-    text-align: right;
+    display: flex;
+    flex-direction: row;
     padding: 10px;
   }
   .line {

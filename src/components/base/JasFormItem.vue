@@ -10,20 +10,21 @@
       <template v-if="config.type == 'textarea'">
         <el-input class="jastextarea" v-model.trim="_value" :maxlength="config.maxlength" :ref="config.field" type="textarea" :autosize="{ minRows: 2, maxRows: 6 }" :rows="2" :disabled="isTrue(config.disabled)" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
       </template>
-
+      <template v-if="config.type == 'number'">
+        <el-input-number :ref="config.field" v-model="_value" :precision="config.precision" :step="config.step" :disabled="isTrue(config.disabled)" :max="config.max || Infinity" :min="config.min || 0" controls-position="right" clearable :placeholder="config.placeholder || '请输入'+config.name" size="small" style="text-align:left;"></el-input-number>
+      </template>
       <template v-if="config.type == 'select'">
         <el-select :ref="config.field" v-model.trim="_value" clearable :disabled="isTrue(config.disabled)" :placeholder="config.placeholder || '请选择'+config.name" size="small">
           <el-option v-for="option in config.options" :key="option.value" :label="option.label" :value="option.value"></el-option>
         </el-select>
       </template>
       <template v-if="config.type == 'multiSelect'">
-        <jas-base-el-multi-select :ref="config.field" v-model="_value" :item="item" :options="config.options"></jas-base-el-multi-select>
-      </template>
-      <template v-if="config.type == 'number'">
-        <el-input-number :ref="config.field" v-model="_value" :precision="precision(config.precision)" :step="1" :max="config.max || 999999" :min="config.min || 0" controls-position="right" clearable :placeholder="config.placeholder || '请输入'+config.name" size="small" style="text-align:left;"></el-input-number>
+        <el-select :ref="config.field" multiple v-model.trim="_value" clearable :disabled="isTrue(config.disabled)" :placeholder="config.placeholder || '请选择'+config.name" size="small">
+          <el-option v-for="option in config.options" :key="option.value" :label="option.label" :value="option.value"></el-option>
+        </el-select>
       </template>
       <template v-if="config.type == 'date'">
-        <el-date-picker clearable value-format="yyyy-MM-dd" type="date" :placeholder="'请选择'+config.name" @change="fieldChanged(item.field)" :ref="config.field" v-model="_value" size="small" style="width: 100%;"></el-date-picker>
+        <el-date-picker clearable :value-format="dateMap[config.dateType] ||dateMap.date" :type="config.dateType || date" :picker-options="config.pickerOptions" :disabled="isTrue(config.disabled)" :placeholder="config.placeholder || '请选择'+config.name" :ref="config.field" v-model="_value" size="small" style="width: 100%;"></el-date-picker>
       </template>
     </el-form-item>
   </div>
@@ -55,12 +56,20 @@ export default {
   },
   props: {
     value: {},
+    form: {},
     config: {
       type: Object,
     },
   },
   data() {
-    return {};
+    return {
+      dateMap: {
+        year: "yyyy-MM",
+        month: "yyyy-MM",
+        date: "yyyy-MM-dd",
+        datetime: "yyyy-MM-dd HH:mm:ss",
+      },
+    };
   },
   computed: {
     _value: {
@@ -99,13 +108,34 @@ export default {
       return true;
     },
     formatConfig() {
-      if (this.config.type == "select") {
-        if (this.config.optnCode) {
-          let arr = eval(this.config.optnCode);
+      var config = this.config;
+      if (config.type == "select" || config.type == "multiSelect") {
+        if (config.optnCode) {
+          let arr = eval(config.optnCode);
           if (typeof arr == "object") {
-            this.config.options = eval(this.config.optnCode);
+            config.options = eval(config.optnCode);
           }
         }
+      }
+      if (config.type == "date") {
+        config.pickerOptions = {
+          disabledDate: (time) => {
+            let min = 0,
+              max = Infinity;
+            if (config.isBeforeToday == "1") {
+              max = new Date().getTime();
+            }
+            if (config.minField && this.form && this.form[config.minField]) {
+              min =
+                new Date(this.form[config.minField]).getTime() -
+                60 * 60 * 24 * 1000;
+            }
+            if (config.maxField && this.form && this.form[config.maxField]) {
+              max = new Date(this.form[config.maxField]).getTime();
+            }
+            return time.getTime() < min || time.getTime() > max;
+          },
+        };
       }
     },
     formatRules() {
@@ -121,10 +151,6 @@ export default {
         (item) => item.value == this.config.regexp
       );
       rule.length && this.config.rules.push(rule[0]);
-    },
-    precision: function (value) {
-      if (!value) return 0;
-      return value;
     },
   },
 };

@@ -7,7 +7,7 @@ let oBaseTitle = {
   type: "moduletitle",
 };
 let oLimitTitle = {
-  name: "验证信息",
+  name: "输入限制",
   type: "moduletitle",
 };
 
@@ -126,6 +126,51 @@ const input = [ //
 ];
 const date = [
   ...baseAttrs,
+  oLimitTitle,
+  oRequired,
+  {
+    name: "不大于今天",
+    field: "isBeforeToday",
+    type: "select",
+    defaultVal: '0',
+    options: [{
+      label: '是',
+      value: '1'
+    }, {
+      label: '否',
+      value: '0'
+    }]
+  },
+  {
+    name: "时间类型",
+    field: "dateType",
+    type: "select",
+    defaultVal: 'date',
+    options: [{ // year/month/date/week/ datetime/datetimerange/daterange
+      label: '年',
+      value: 'year'
+    }, {
+      label: '年-月',
+      value: 'month'
+    }, {
+      label: '年-月-日',
+      value: 'date'
+    }, {
+      label: '年-月-日 时:分:秒',
+      value: 'datetime'
+    }]
+  },
+  {
+    name: "大于此字段",
+    field: "minField",
+    placeholder: '填写此表单内日期类型的字段名',
+    type: "input"
+  }, {
+    name: "小于此字段",
+    field: "maxField",
+    placeholder: '填写此表单内日期类型的字段名',
+    type: "input"
+  },
 ];
 const select = [
   ...baseAttrs,
@@ -144,12 +189,45 @@ const textarea = [
   },
 ];
 const number = [
-  ...baseAttrs,
+  ...baseAttrs, oLimitTitle, oRequired, {
+    name: "最大值",
+    field: "max",
+    type: "number",
+    max: Infinity,
+    min: -Infinity,
+  }, {
+    name: "最小值",
+    field: "min",
+    type: "number",
+    defaultVal: 0,
+    max: Infinity,
+    min: -Infinity,
+  }, {
+    name: "步长",
+    field: "step",
+    defaultVal: 1,
+    max: Infinity,
+    min: 0,
+    type: "number"
+  }, {
+    name: "小数位数",
+    field: "precision",
+    defaultVal: 0,
+    precision: 0,
+    type: "number",
+    step: 1,
+  },
 
 ];
 const multiSelect = [
   ...baseAttrs,
-
+  oLimitTitle,
+  oRequired,
+  {
+    name: "选项信息",
+    type: "moduletitle",
+  },
+  oOptnCode
 ];
 
 

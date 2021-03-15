@@ -109,3 +109,29 @@ button {
   width: 0%;
 }
 
+
+
+*::-webkit-scrollbar {
+  /*滚动条整体样式*/
+  width: 8px;
+  /*高宽分别对应横竖滚动条的尺寸*/
+  height: 8px;
+  scrollbar-arrow-color: red;
+}
+
+*::-webkit-scrollbar-thumb {
+  /*滚动条里面小方块*/
+  border-radius: 5px;
+  -webkit-box-shadow: inset 0 0 5px rgba(218, 218, 218, 0.5);
+  box-shadow: inset 0 0 5px rgba(218, 218, 218, 0.5);
+  background: rgba(218, 218, 218, 0.554);
+  scrollbar-arrow-color: red;
+}
+
+*::-webkit-scrollbar-track {
+  /*滚动条里面轨道*/
+  -webkit-box-shadow: inset 0 0 5px rgba(218, 218, 218, 0.3);
+  box-shadow: inset 0 0 5px rgba(218, 218, 218, 0.3);
+  border-radius: 0;
+  background: rgba(218, 218, 218, 0.2);
+}

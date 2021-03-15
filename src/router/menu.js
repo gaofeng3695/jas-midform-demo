@@ -10,11 +10,11 @@ export default [{
   }, {
     "icon": "fa fa-bookmark",
     "attributes": {
-      "functionid": "b17e0eb2-094b-4514-8709-98b771bd0835",
-      "URL": "module-page-maker/form-diy/FormDiy22.vue"
+      "functionid": "b17e0eb2-094b-4514-8709-98b771bd08351",
+      "URL": "module-page-maker/form-diy/FormDiyList.vue"
     },
     "id": "P-PRIN-000002",
-    "text": "表单生成22"
+    "text": "我的配置"
   }],
   "icon": "fa fa-user-circle",
   "id": "P-PRIN-0000",

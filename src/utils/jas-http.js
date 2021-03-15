@@ -63,7 +63,7 @@ const ajax = function (type, url, oParam, isnoToken) {
 
       })
       .catch(res => {
-        window.top.Vue.prototype.$message({
+        Vue.prototype.$message({
           message: '服务器连接失败，请稍后再试...',
           type: 'error'
         });

@@ -4,7 +4,7 @@
       <el-form :model="form" label-position="right" label-width="100px" style="overflow:hidden;">
         <el-row :gutter="20">
           <el-col v-for="item in formitems" :key="item.field" :xs="colNum(item)" :sm="colNum(item)" :md="colNum(item)" :lg="colNum(item)" :xl="colNum(item)">
-            <JasFormItem v-model="form[item.field]" :config="item"></JasFormItem>
+            <JasFormItem v-model="form[item.field]" :form="form" :config="item"></JasFormItem>
           </el-col>
         </el-row>
       </el-form>
