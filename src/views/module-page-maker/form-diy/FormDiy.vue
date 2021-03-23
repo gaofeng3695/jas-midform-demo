@@ -238,6 +238,7 @@ export default {
           formitems: this.formitems,
         })
       );
+      this.$emit("save");
     },
     preview() {
       this.$jasStorage.set("formitems", JSON.stringify(this.formitems));
