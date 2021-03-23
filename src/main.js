@@ -11,9 +11,15 @@ import jasStorage from './utils/jas-storage';
 import jasHttp from './utils/jas-http';
 // import * as jasDirectives from './assets/js/jas-directives';
 
+import JasFormItem from "@/components/base/JasFormItem";
+
+
 Vue.config.productionTip = false;
 
 Vue.use(ElementUI);
+// Vue.use(JasFormItem);
+
+Vue.component('jas-form-item', JasFormItem);
 // Vue.use(jasDirectives);
 
 Vue.prototype.$jasHttp = jasHttp;

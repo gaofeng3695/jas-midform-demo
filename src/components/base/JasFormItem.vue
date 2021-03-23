@@ -1,8 +1,18 @@
 
 <template>
   <div>
+    <div v-if="isview" class="mymask"></div>
     <JasBaseGroupTitle v-if="config.type == 'grouptitle'" :name="config.name"></JasBaseGroupTitle>
     <JasBaseModuleTitle v-else-if="config.type == 'moduletitle'" :name="config.name"></JasBaseModuleTitle>
+    <template v-else-if="config.type == 'formarr'">
+      <div v-if="isview" style="min-height:50px;">子表单</div>
+      <JasSubForms v-else v-model="_value"></JasSubForms>
+      <!-- :formform="config.formform" -->
+    </template>
+    <template v-else-if="config.type == 'slot'">
+      <slot :name="config.slotname"></slot>
+      <div v-if="isview" style="min-height:50px;">自定义插槽：{{config.slotname}}</div>
+    </template>
     <el-form-item v-else :ref="config.field + 123" :label="config.name" :prop="config.field" :rules="config && config.rules">
       <template v-if="config.type == 'input'">
         <el-input :ref="config.field" v-model.trim="_value" :maxlength="config.maxlength" :disabled="isTrue(config.disabled)" :placeholder="config.placeholder || '请输入'+config.name" size="small" clearable></el-input>
@@ -26,6 +36,7 @@
       <template v-if="config.type == 'date'">
         <el-date-picker clearable :value-format="dateMap[config.dateType] ||dateMap.date" :type="config.dateType || date" :picker-options="config.pickerOptions" :disabled="isTrue(config.disabled)" :placeholder="config.placeholder || '请选择'+config.name" :ref="config.field" v-model="_value" size="small" style="width: 100%;"></el-date-picker>
       </template>
+
     </el-form-item>
   </div>
 </template>
@@ -45,6 +56,7 @@ min
 step
 */
 import JasBaseGroupTitle from "@/components/base/JasBaseGroupTitle";
+import JasSubForms from "@/components/base/JasSubForms";
 import JasBaseModuleTitle from "@/components/base/JasBaseModuleTitle";
 import formItemRulesArr from "@/views/module-page-maker/form-diy/config/formItemRulesArr";
 
@@ -53,8 +65,12 @@ export default {
   components: {
     JasBaseGroupTitle,
     JasBaseModuleTitle,
+    JasSubForms,
   },
   props: {
+    isview: {
+      default: false,
+    },
     value: {},
     form: {},
     config: {
@@ -157,6 +173,15 @@ export default {
 </script>
 
 <style lang="scss">
+.mymask {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  background: #f1f1f103;
+  z-index: 3;
+}
 .el-form-item {
   margin-bottom: 12px;
   min-height: 41px;

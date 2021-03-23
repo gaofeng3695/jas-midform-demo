@@ -1,10 +1,12 @@
 <template>
-  <el-dialog :title="formform.formtitle" :visible.sync="visible">
+  <el-dialog :title="formform.formtitle" :width="formform.width" :top="formform.top" append-to-body :visible.sync="visible">
     <div>
       <el-form :model="form" label-position="right" label-width="100px" style="overflow:hidden;">
         <el-row :gutter="20">
           <el-col v-for="item in formitems" :key="item.field" :xs="colNum(item)" :sm="colNum(item)" :md="colNum(item)" :lg="colNum(item)" :xl="colNum(item)">
-            <JasFormItem v-model="form[item.field]" :form="form" :config="item"></JasFormItem>
+            <jas-form-item v-model="form[item.field]" :form="form" :config="item">
+              <div slot="test">这是测试自定义插槽的功能</div>
+            </jas-form-item>
           </el-col>
         </el-row>
       </el-form>
@@ -16,15 +18,14 @@
 </template>
 
 <script>
-import JasFormItem from "@/components/base/JasFormItem";
-
+// import JasFormItem from "@/components/base/JasFormItem";
 export default {
   name: "FormDialog",
   props: {
     value: {},
   },
   components: {
-    JasFormItem,
+    // JasFormItem,
   },
   computed: {
     visible: {

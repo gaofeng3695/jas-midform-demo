@@ -13,11 +13,23 @@
     <div class="formDiy">
       <div class="leftbox">
         <div class="container">
+          <div class="pl8">
+            <JasBaseModuleTitle name="基础组件" />
+          </div>
           <draggable class="dragArea list-group" :list="typelist" :group="{ name: 'people', pull: 'clone', put: false }" :clone="createNewItem">
             <div class="list-group-item01" v-for="element in typelist" :key="element.value">
               <div class="item">
                 {{ element.label }}
-
+              </div>
+            </div>
+          </draggable>
+          <div class="pl8">
+            <JasBaseModuleTitle name="高级组件" />
+          </div>
+          <draggable class="dragArea list-group" :list="prolist" :group="{ name: 'people', pull: 'clone', put: false }" :clone="createNewItem">
+            <div class="list-group-item01" v-for="element in prolist" :key="element.value">
+              <div class="item">
+                {{ element.label }}
               </div>
             </div>
           </draggable>
@@ -26,14 +38,14 @@
       <div class="centerbox">
         <div class="container">
           <el-form label-position="left" label-width="120px" style="width:100%;height:100%;overflow:auto;">
-            <draggable class="dragArea list-group" :list="formitems" group="people">
+            <draggable class="dragArea02 list-group" :list="formitems" group="people">
               <div class="list-group-item" v-for="item in formitems" :key="item.field">
                 <div class="item2wrap">
                   <div class="item2" @click="activeItem =item" :class="activeItem == item ? 'active' : ''">
                     <!-- {{ item.name }} -->
                     <el-row :gutter="20">
-                      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
-                        <JasFormItem v-model="form[item.field]" :config="item"></JasFormItem>
+                      <el-col :xs="24" :sm="24" :md="18" :lg="18" :xl="18">
+                        <jas-form-item v-model="form[item.field]" :isview="true" :config="item"></jas-form-item>
                       </el-col>
                     </el-row>
                     <div v-show="activeItem == item" class="item2tool">
@@ -52,17 +64,21 @@
 
           <el-tabs>
             <el-tab-pane label="属性配置" class="tabBox">
-              <el-form v-if="isReForm" :model="activeItem" label-position="left" label-width="90px">
+              <el-form v-if="isReForm" :model="activeItem" label-position="left" label-width="100px">
                 <el-col v-for="item in formItemAttrsObj[activeItem.type]" :key="item.field" :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
-                  <JasFormItem v-model="activeItem[item.field]" :config="item"></JasFormItem>
+                  <jas-form-item v-model="activeItem[item.field]" :config="item">
+                    <div slot="formbtn" style="padding-top:10px;text-align:right;">
+                      <el-button size="mini" type="primary" @click="subFormShow = true">子表单配置</el-button>
+                    </div>
+                  </jas-form-item>
                 </el-col>
               </el-form>
             </el-tab-pane>
             <el-tab-pane label="表单配置" class="tabBox">
-              <el-form label-position="left" label-width="90px">
+              <el-form label-position="left" label-width="100px">
                 <el-row :gutter="20">
                   <el-col v-for="item in formformConfs" :key="item.field" :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
-                    <JasFormItem v-model="formform[item.field]" :config="item"></JasFormItem>
+                    <jas-form-item v-model="formform[item.field]" :config="item"></jas-form-item>
                   </el-col>
                 </el-row>
               </el-form>
@@ -76,6 +92,12 @@
 
     <FormDialog v-model="outerVisible" v-if="outerVisible"></FormDialog>
 
+    <el-dialog title="子表单" :visible.sync="subFormShow" top="15vh" append-to-body v-if="subFormShow" width="80%" :center="true">
+      <div style="height: calc( 85vh - 140px ) ;">
+        <FormDiy />
+      </div>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -87,6 +109,7 @@ import formItemAttrsObj from "@/views/module-page-maker/form-diy/config/formItem
 import formItemTypesArr from "@/views/module-page-maker/form-diy/config/formItemTypesArr";
 import JasBaseModuleTitle from "@/components/base/JasBaseModuleTitle";
 export default {
+  name: "FormDiy",
   components: {
     draggable,
     JasBaseModuleTitle,
@@ -101,24 +124,40 @@ export default {
       isReForm: true,
       form: {},
       outerVisible: false,
+      subFormShow: false,
       activeItem: null,
       idGlobal: 1,
       typelist: formItemTypesArr,
+      prolist: [
+        {
+          label: "表单组",
+          value: "formarr",
+        },
+        {
+          label: "按钮组",
+          value: "buttonarr",
+        },
+        {
+          label: "自定义插槽",
+          value: "slot",
+        },
+      ],
       formItemAttrsObj: formItemAttrsObj,
       formitems: [
-        // {
-        //   name: "基础信息",
-        //   type: "grouptitle",
-        //   field: "field",
-        //   required: false,
-        // },
-        { name: "姓名", type: "number", field: "name", required: "0" },
+        {
+          name: "基础信息",
+          type: "grouptitle",
+          field: "field",
+          required: false,
+        },
+        { name: "姓名", type: "input", field: "name", required: "0" },
       ],
       formform: {
         formtitle: "新增表单",
         col: 2,
         buttonNames: "确定、上传、取消",
         createTime: new Date().getTime(),
+        width: "900px",
       },
       formformConfs: [
         {
@@ -143,6 +182,26 @@ export default {
           field: "buttonNames",
           type: "input",
           placeholder: "输入以顿号分割的按钮名称",
+        },
+        {
+          name: "对话框宽度",
+          field: "width",
+          type: "input",
+          defaultVal: "900px",
+          placeholder: "例： 800px  或者  60% ",
+        },
+        {
+          name: "对话框高度",
+          field: "height",
+          type: "input",
+          placeholder: "例： 800px  或者  70vh ",
+        },
+        {
+          name: "对话框上边距",
+          field: "top",
+          type: "input",
+          defaultVal: "15vh",
+          placeholder: "例： 100px  或者  15vh ",
         },
       ],
     };
@@ -249,6 +308,7 @@ export default {
     border: 1px solid #ececec;
     box-sizing: border-box;
     height: 100%;
+    overflow: auto;
   }
   .leftbox {
     width: 150px;
@@ -281,20 +341,25 @@ export default {
     }
   }
 }
-.dragArea {
+
+.pl8 {
+  padding-left: 8px;
+}
+.dragArea02 {
   height: 100%;
-  .list-group-item01 {
-    padding: 6px 6px 0 6px;
-    .item {
-      border-radius: 4px;
-      background: #f4f6fc;
-      text-align: center;
-      line-height: 30px;
-      font-size: 12px;
-      cursor: move;
-      &:hover {
-        background: #e0f3ff;
-      }
+}
+
+.list-group-item01 {
+  padding: 6px 6px 0 6px;
+  .item {
+    border-radius: 4px;
+    background: #f4f6fc;
+    text-align: center;
+    line-height: 30px;
+    font-size: 12px;
+    cursor: move;
+    &:hover {
+      background: #e0f3ff;
     }
   }
 }
@@ -322,6 +387,7 @@ export default {
       height: 30px;
       width: 100px;
       position: absolute;
+      z-index: 3;
       right: 10px;
       top: 12px;
     }

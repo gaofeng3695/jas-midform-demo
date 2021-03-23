@@ -7,3 +7,7 @@ $--font-path: '~element-ui/lib/theme-chalk/fonts';
 @import "~element-ui/packages/theme-chalk/src/index";
 /* 通知框样式调整--开始 */
 
+.el-dialog--center .el-dialog__body {
+  text-align: initial;
+  padding: 5px 20px 20px;
+}

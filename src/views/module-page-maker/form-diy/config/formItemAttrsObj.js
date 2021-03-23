@@ -230,7 +230,28 @@ const multiSelect = [
   oOptnCode
 ];
 
-
+const formarr = [{
+  name: "分组标题",
+  field: "groupName",
+  required: '1',
+  type: "input",
+}, oField, {
+  ...oWidthRate,
+  defaultVal: 1,
+}, {
+  type: "slot",
+  slotname: 'formbtn'
+}]
+const slot = [{
+  name: "插槽英文名",
+  field: "slotname",
+  required: '1',
+  regexp: 'rule02',
+  type: "input",
+}, {
+  ...oWidthRate,
+  defaultVal: 1,
+}]
 
 
 
@@ -244,4 +265,6 @@ export default {
   textarea,
   number,
   multiSelect,
+  formarr,
+  slot,
 }

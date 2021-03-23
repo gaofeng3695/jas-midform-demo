@@ -5,7 +5,7 @@
     </div>
     <div class="line"></div> -->
     <div class="middlewrap">
-      <el-button size="mini" type="primary" @click="createNew">新增表单</el-button>
+      <el-button size="mini" plain type="primary" @click="createNew">新增表单</el-button>
     </div>
     <div class="mainWrap">
       <el-table :data="tableData" border height="100%" align="center" style="width: 100%;height:100%;">
@@ -22,8 +22,8 @@
       </el-table>
     </div>
 
-    <el-dialog title="我的表单" :visible.sync="visible" v-if="visible" width="80%" :center="true">
-      <div style="height: calc( 85vh - 160px ) ;">
+    <el-dialog title="我的表单" :visible.sync="visible" top="10vh" v-if="visible" append-to-body width="80%" :center="true">
+      <div style="height: calc( 90vh - 140px ) ;">
         <FormDiy :formid="formid" />
       </div>
     </el-dialog>
