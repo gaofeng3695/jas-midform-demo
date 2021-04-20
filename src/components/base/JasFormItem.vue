@@ -5,9 +5,17 @@
     <JasBaseGroupTitle v-if="config.type == 'grouptitle'" :name="config.name"></JasBaseGroupTitle>
     <JasBaseModuleTitle v-else-if="config.type == 'moduletitle'" :name="config.name"></JasBaseModuleTitle>
     <template v-else-if="config.type == 'formarr'">
-      <div v-if="isview" style="min-height:50px;">子表单</div>
-      <JasSubForms v-else v-model="_value"></JasSubForms>
+      <div v-if="isview" style="min-height:50px;">{{'【子表单组】'+config.groupName }}</div>
+      <JasSubForms v-model="_value" :group-name="config.groupName" :formitems="config.formitems"></JasSubForms>
       <!-- :formform="config.formform" -->
+    </template>
+    <template v-else-if="config.type == 'btnarr'">
+      <div v-if="isview" style="min-height:50px;">{{'按钮组'}}</div>
+
+      <div :style="[{'text-align':config.textalign,'min-height': config.minheight + 'px','padding-top': config.paddingtop + 'px'}]" style="box-sizing :border-box;">
+        <el-button @click="$emit('btnclick',item)" v-for="item in config.btns" :plain="item.isplain" :type="item.type" :size="item.size" :key="item.name">{{item.name}}</el-button>
+      </div>
+
     </template>
     <template v-else-if="config.type == 'slot'">
       <slot :name="config.slotname"></slot>
@@ -111,9 +119,8 @@ export default {
   },
   mounted() {
     if (
-      this.config.defaultVal !== null &&
-      this.config.defaultVal !== undefined &&
-      this.config.defaultVal !== ""
+      [null, undefined, ""].indexOf(this.config.defaultVal) == -1 &&
+      [null, undefined, ""].indexOf(this.value) > -1
     ) {
       this.$emit("input", this.config.defaultVal);
     }

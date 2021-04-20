@@ -6,23 +6,23 @@ export default [{
   children: [ //
     {
       id: "P-PRIN-000002",
-      text: "我的配置",
+      text: "我的表单",
       icon: "fa fa-bookmark",
       attributes: {
-        functionid: "b17e0eb2-094b-4514-8709-98b771bd08351",
-        URL: "module-page-maker/form-diy/FormDiyList.vue"
+        functionid: "b17e0eb2-094b-4514-8709-98b771bd08352",
+        URL: "module-page-maker/form-template/TableTemplate.vue"
       },
     },
     {
       id: "P-PRIN-000001",
-      text: "表单生成",
+      text: "表格配置",
       icon: "fa fa-bookmark",
       attributes: {
-        functionid: "b17e0eb2-094b-4514-8709-98b771bd0835",
-        URL: "module-page-maker/form-diy/FormDiy.vue"
+        functionid: "b17e0eb2-094b-4514-8709-98b771bd08351",
+        URL: "module-page-maker/form-diy/TableDiy.vue"
       },
-
     },
+
 
   ],
 

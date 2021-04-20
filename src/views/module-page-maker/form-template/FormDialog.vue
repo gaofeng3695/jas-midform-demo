@@ -1,20 +1,32 @@
 <template>
-  <el-dialog :title="formform.formtitle" :width="formform.width" :top="formform.top" append-to-body :visible.sync="visible">
+  <el-dialog v-if="isdialog" :title="formform.formtitle" :width="formform.width" :top="formform.top" append-to-body :visible.sync="visible">
     <div>
       <el-form :model="form" label-position="right" label-width="100px" style="overflow:hidden;">
         <el-row :gutter="20">
           <el-col v-for="item in formitems" :key="item.field" :xs="colNum(item)" :sm="colNum(item)" :md="colNum(item)" :lg="colNum(item)" :xl="colNum(item)">
-            <jas-form-item v-model="form[item.field]" :form="form" :config="item">
+            <jas-form-item @btnclick="clickbtn" v-model="form[item.field]" :form="form" :config="item">
               <div slot="test">这是测试自定义插槽的功能</div>
             </jas-form-item>
           </el-col>
         </el-row>
       </el-form>
     </div>
-    <div slot="footer" class="dialog-footer">
-      <el-button :type="btn == '取消'?'' :'primary'" size="small" v-for="btn in formform.buttonNames.split('、')" :key="btn" @click="visible = false">{{btn}}</el-button>
+    <div slot="footer" v-if="formform.buttonNames" class="dialog-footer">
+      <el-button v-for="btn in formform.buttonNames.split('、')" :type="btn == '取消'?'' :'primary'" size="small" :key="btn" @click="visible = false">{{btn}}</el-button>
     </div>
   </el-dialog>
+  <div v-else>
+    <el-form :model="form" label-position="right" label-width="100px" style="overflow:hidden;">
+      <el-row :gutter="20">
+        <el-col v-for="item in formitems" :key="item.field" :xs="colNum(item)" :sm="colNum(item)" :md="colNum(item)" :lg="colNum(item)" :xl="colNum(item)">
+          <jas-form-item @btnclick="clickbtn" v-model="form[item.field]" :form="form" :config="item">
+            <div slot="test">这是测试自定义插槽的功能</div>
+          </jas-form-item>
+        </el-col>
+      </el-row>
+    </el-form>
+  </div>
+
 </template>
 
 <script>
@@ -23,6 +35,10 @@ export default {
   name: "FormDialog",
   props: {
     value: {},
+    isdialog: {
+      default: true,
+    },
+    id: {},
   },
   components: {
     // JasFormItem,
@@ -40,31 +56,33 @@ export default {
   },
   data() {
     return {
-      form: {},
-      // outerVisible: false,
-      typelist: [
-        { name: "单行文本", type: "input" },
-        { name: "时间日期", type: "date" },
-        { name: "下拉单选框", type: "select" },
-        { name: "多行文本", type: "textarea" },
-        { name: "数字", type: " number" },
-        { name: "下拉多选框", type: "multiSelect" },
-      ],
-      formitems: [{ name: "姓名", type: "input", field: "name" }],
-      formform: {
-        formtitle: "新增表单",
-        col: 2,
-        buttonNames: "确定、取消",
+      form: {
+        // frends: [
+        //   { field368548: 27, field1: "谢", field985230: "1" },
+        //   { field368548: 18, field1: "李师师", field985230: "0" },
+        // ],
       },
+      formitems: [],
+      formform: {},
     };
   },
   created() {
     this.get();
   },
   methods: {
+    clickbtn(btn) {
+      console.log(btn.id);
+      if (btn.id == "back") {
+        this.visible = false;
+      }
+      this.$emit("clickbtn", btn);
+    },
     get() {
-      this.formitems = JSON.parse(this.$jasStorage.get("formitems"));
-      this.formform = JSON.parse(this.$jasStorage.get("formform"));
+      if (this.id && localStorage.getItem(this.id)) {
+        let oForm = JSON.parse(localStorage.getItem(this.id) || {});
+        this.formitems = oForm.formitems;
+        this.formform = oForm.formitems;
+      }
     },
 
     colNum(item) {

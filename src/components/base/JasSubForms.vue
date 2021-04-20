@@ -1,9 +1,9 @@
 
 <template>
   <div>
-    <div v-if="!value.length">
+    <div v-if="!_value.length">
       <div class="mytitle">
-        <JasBaseGroupTitle name="config"></JasBaseGroupTitle>
+        <JasBaseGroupTitle :name="groupName"></JasBaseGroupTitle>
         <div class="btns">
           <el-button type="text" size="small" @click="addForm">新增</el-button>
         </div>
@@ -11,12 +11,12 @@
       <div>暂无数据</div>
     </div>
     <div>
-      <div v-for="(subform,index) in value" :key="'thisform'+index">
+      <div v-for="(subform,index) in _value" :key="'thisform'+index">
         <div class="mytitle">
-          <JasBaseGroupTitle :name="'子表单' + index"></JasBaseGroupTitle>
+          <JasBaseGroupTitle :name="groupName + ' ' + (index+1) "></JasBaseGroupTitle>
           <div class="btns">
             <el-button type="text" size="small" @click="removeForm(subform)">删除</el-button>
-            <el-button v-show="index == value.length-1" type="text" size="small" @click="addForm">新增</el-button>
+            <el-button v-show="index == _value.length-1" type="text" size="small" @click="addForm">新增</el-button>
           </div>
         </div>
         <el-form :model="subform" label-position="right" label-width="100px" style="overflow:hidden;">
@@ -65,11 +65,13 @@ export default {
         return [{}];
       },
     },
+    groupName: {
+      default: "子表单",
+    },
     formitems: {
       default: function () {
         return [
           { name: "姓名1", type: "input", field: "name2", required: "0" },
-          { name: "姓名2", type: "input", field: "name4", required: "0" },
         ];
       },
     },
@@ -86,7 +88,17 @@ export default {
       refresh: false,
     };
   },
-  computed: {},
+  computed: {
+    _value: {
+      get() {
+        this.$emit("input", this.value);
+        return this.value;
+      },
+      set(val) {
+        this.$emit("input", val);
+      },
+    },
+  },
   watch: {},
   created() {},
   mounted() {},

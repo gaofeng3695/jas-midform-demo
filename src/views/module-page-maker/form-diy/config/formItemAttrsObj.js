@@ -233,15 +233,125 @@ const multiSelect = [
 const formarr = [{
   name: "分组标题",
   field: "groupName",
+  defaultVal: '子表单',
   required: '1',
   type: "input",
 }, oField, {
   ...oWidthRate,
-  defaultVal: 1,
+  defaultVal: '1',
 }, {
   type: "slot",
   slotname: 'formbtn'
-}]
+}];
+
+
+const btnarr = [ //
+  oField, {
+    name: "对齐方式",
+    field: "textalign",
+    type: "select",
+    defaultVal: 'right',
+    options: [{
+      label: '左对齐',
+      value: 'left'
+    }, {
+      label: '居中',
+      value: 'center'
+    }, {
+      label: '右对齐',
+      value: 'right'
+    }]
+  }, {
+    ...oWidthRate,
+    defaultVal: 1,
+  }, {
+    name: "最小高度",
+    field: "minheight",
+    type: "number",
+    defaultVal: 53,
+  }, {
+    name: "上边距",
+    field: "paddingtop",
+    type: "number",
+    defaultVal: 6,
+  }, {
+    field: 'btns',
+    groupName: "按钮",
+    type: "formarr",
+    formitems: [ //
+      {
+        name: "名称",
+        field: "name",
+        defaultVal: '按钮',
+        widthRate: 1,
+        type: "input",
+      }, {
+        name: "唯一标识",
+        field: "id",
+        widthRate: 1,
+        type: "input",
+      }, {
+        name: "朴素按钮",
+        field: "isplain",
+        type: "select",
+        widthRate: 1,
+        defaultVal: false,
+        options: [{
+          label: '是',
+          value: true
+        }, {
+          label: '否',
+          value: false
+        }]
+      }, {
+        name: "类型",
+        field: "type",
+        type: "select",
+        widthRate: 1,
+        defaultVal: 'primary',
+        options: [{
+          label: '主要按钮',
+          value: 'primary'
+        }, {
+          label: '成功按钮',
+          value: 'success'
+        }, {
+          label: '信息按钮',
+          value: 'info'
+        }, {
+          label: '警告按钮',
+          value: 'warning'
+        }, {
+          label: '危险按钮',
+          value: 'danger'
+        }]
+      }, {
+        name: "大小",
+        field: "size",
+        type: "select",
+        defaultVal: 'mini',
+        widthRate: 1,
+        options: [{
+          label: '默认按钮',
+          value: 'large'
+        }, {
+          label: '中等按钮',
+          value: 'medium'
+        }, {
+          label: '小型按钮',
+          value: 'small'
+        }, {
+          label: '超小按钮',
+          value: 'mini'
+        }]
+      }
+    ],
+  }
+]
+
+
+
+
 const slot = [{
   name: "插槽英文名",
   field: "slotname",
@@ -266,5 +376,6 @@ export default {
   number,
   multiSelect,
   formarr,
+  btnarr,
   slot,
 }

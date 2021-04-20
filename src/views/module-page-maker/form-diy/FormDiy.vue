@@ -1,6 +1,6 @@
 <template>
   <div class="allwrap">
-    <div class="btnwrap">
+    <div v-if="!ischild" class="btnwrap">
       <div style="flex:1;">
         <JasBaseModuleTitle :name="formform.formtitle" />
       </div>
@@ -9,7 +9,7 @@
         <el-button size="mini" type="primary" @click="preview">预览</el-button>
       </div>
     </div>
-    <div class="line"></div>
+    <div v-if="!ischild" class="line"></div>
     <div class="formDiy">
       <div class="leftbox">
         <div class="container">
@@ -23,23 +23,26 @@
               </div>
             </div>
           </draggable>
-          <div class="pl8">
-            <JasBaseModuleTitle name="高级组件" />
-          </div>
-          <draggable class="dragArea list-group" :list="prolist" :group="{ name: 'people', pull: 'clone', put: false }" :clone="createNewItem">
-            <div class="list-group-item01" v-for="element in prolist" :key="element.value">
-              <div class="item">
-                {{ element.label }}
-              </div>
+          <div v-if="!ischild">
+
+            <div class="pl8">
+              <JasBaseModuleTitle name="高级组件" />
             </div>
-          </draggable>
+            <draggable class="dragArea list-group" :list="prolist" :group="{ name: 'people', pull: 'clone', put: false }" :clone="createNewItem">
+              <div class="list-group-item01" v-for="element in prolist" :key="element.value">
+                <div class="item">
+                  {{ element.label }}
+                </div>
+              </div>
+            </draggable>
+          </div>
         </div>
       </div>
       <div class="centerbox">
         <div class="container">
           <el-form label-position="left" label-width="120px" style="width:100%;height:100%;overflow:auto;">
             <draggable class="dragArea02 list-group" :list="formitems" group="people">
-              <div class="list-group-item" v-for="item in formitems" :key="item.field">
+              <div class="list-group-item" v-for="item in formitems" :key="item.field+( '_'+ Math.random())">
                 <div class="item2wrap">
                   <div class="item2" @click="activeItem =item" :class="activeItem == item ? 'active' : ''">
                     <!-- {{ item.name }} -->
@@ -61,10 +64,9 @@
       </div>
       <div class="rightbox">
         <div class="container rightcon">
-
           <el-tabs>
             <el-tab-pane label="属性配置" class="tabBox">
-              <el-form v-if="isReForm" :model="activeItem" label-position="left" label-width="100px">
+              <el-form :model="activeItem" label-position="left" label-width="100px">
                 <el-col v-for="item in formItemAttrsObj[activeItem.type]" :key="item.field" :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
                   <jas-form-item v-model="activeItem[item.field]" :config="item">
                     <div slot="formbtn" style="padding-top:10px;text-align:right;">
@@ -74,7 +76,7 @@
                 </el-col>
               </el-form>
             </el-tab-pane>
-            <el-tab-pane label="表单配置" class="tabBox">
+            <el-tab-pane v-if="!ischild" label="表单配置" class="tabBox">
               <el-form label-position="left" label-width="100px">
                 <el-row :gutter="20">
                   <el-col v-for="item in formformConfs" :key="item.field" :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
@@ -90,11 +92,14 @@
 
     </div>
 
-    <FormDialog v-model="outerVisible" v-if="outerVisible"></FormDialog>
+    <FormDialog v-model="outerVisible" :id="formform.formtitle" v-if="outerVisible"></FormDialog>
 
     <el-dialog title="子表单" :visible.sync="subFormShow" top="15vh" append-to-body v-if="subFormShow" width="80%" :center="true">
-      <div style="height: calc( 85vh - 140px ) ;">
-        <FormDiy />
+      <div style="height: calc( 75vh - 150px ) ;">
+        <FormDiy ref="childForm" :form-items="activeItem.formitems" :ischild="true" />
+      </div>
+      <div slot="footer">
+        <el-button size="mini" type="primary" @click="setChildFormAttr">确定</el-button>
       </div>
     </el-dialog>
 
@@ -118,10 +123,36 @@ export default {
   },
   props: {
     formid: {},
+    ischild: {
+      default: false,
+    },
+    formItems: {
+      default() {
+        return [
+          {
+            name: "基础信息",
+            type: "grouptitle",
+            field: "field",
+            required: false,
+          },
+          { name: "姓名2", type: "input", field: "name", required: "0" },
+        ];
+      },
+    },
+    formForm: {
+      default() {
+        return {
+          formtitle: "新增表单",
+          col: 2,
+          // buttonNames: "确定、上传、取消",
+          createTime: new Date().getTime(),
+          width: "900px",
+        };
+      },
+    },
   },
   data() {
     return {
-      isReForm: true,
       form: {},
       outerVisible: false,
       subFormShow: false,
@@ -135,7 +166,7 @@ export default {
         },
         {
           label: "按钮组",
-          value: "buttonarr",
+          value: "btnarr",
         },
         {
           label: "自定义插槽",
@@ -143,22 +174,8 @@ export default {
         },
       ],
       formItemAttrsObj: formItemAttrsObj,
-      formitems: [
-        {
-          name: "基础信息",
-          type: "grouptitle",
-          field: "field",
-          required: false,
-        },
-        { name: "姓名", type: "input", field: "name", required: "0" },
-      ],
-      formform: {
-        formtitle: "新增表单",
-        col: 2,
-        buttonNames: "确定、上传、取消",
-        createTime: new Date().getTime(),
-        width: "900px",
-      },
+      formitems: [],
+      formform: {},
       formformConfs: [
         {
           name: "标题",
@@ -177,12 +194,12 @@ export default {
             { label: "四列", value: 4 },
           ],
         },
-        {
-          name: "按钮组",
-          field: "buttonNames",
-          type: "input",
-          placeholder: "输入以顿号分割的按钮名称",
-        },
+        // {
+        //   name: "按钮组",
+        //   field: "buttonNames",
+        //   type: "input",
+        //   placeholder: "输入以顿号分割的按钮名称",
+        // },
         {
           name: "对话框宽度",
           field: "width",
@@ -207,6 +224,8 @@ export default {
     };
   },
   created() {
+    this.formitems = this.formItems;
+    this.formform = this.formForm;
     if (this.formid && localStorage.getItem(this.formid)) {
       let oForm = JSON.parse(localStorage.getItem(this.formid) || {});
       this.formform = oForm.formform || this.formform;
@@ -214,16 +233,12 @@ export default {
     }
     this.activeItem = this.formitems[0];
   },
-  watch: {
-    activeItem() {
-      this.isReForm = false;
-      this.$nextTick(() => {
-        this.isReForm = true;
-      });
-    },
-  },
   methods: {
-    save() {
+    setChildFormAttr() {
+      this.activeItem.formitems = this.$refs.childForm.formitems;
+      this.subFormShow = false;
+    },
+    save(isclose) {
       let formList = JSON.parse(localStorage.getItem("formList") || "[]");
       var formId = this.formform.formtitle;
       if (formList.indexOf(formId) == -1) {
@@ -238,17 +253,19 @@ export default {
           formitems: this.formitems,
         })
       );
-      this.$emit("save");
+      isclose && this.$emit("save");
     },
     preview() {
-      this.$jasStorage.set("formitems", JSON.stringify(this.formitems));
-      this.$jasStorage.set("formform", JSON.stringify(this.formform));
+      // this.$jasStorage.set("formitems", JSON.stringify(this.formitems));
+      // this.$jasStorage.set("formform", JSON.stringify(this.formform));
+
+      this.save(0);
       this.outerVisible = true;
     },
     createNewItem(item) {
-      let num = this.idGlobal++;
+      let num = (Math.random() * 1000000).toFixed();
       let newItem = {
-        name: item.label + num,
+        name: item.label,
         type: item.value,
         field: "field" + num,
         required: "0",
@@ -257,9 +274,9 @@ export default {
       return newItem;
     },
     copyItem(item) {
-      let num = this.idGlobal++;
+      let num = (Math.random() * 1000000).toFixed();
       let newItem = {
-        ...item,
+        ...JSON.parse(JSON.stringify(item)),
         field: "field" + num,
       };
       let index = this.formitems.indexOf(item);
