@@ -157,7 +157,7 @@ export default {
           },
           {
             type: "btn",
-            field: "btn",
+            field: "btn2",
             name: "表格操作",
             fixed: "right",
             width: "200px",
@@ -180,7 +180,7 @@ export default {
           },
           {
             type: "btn",
-            field: "btn",
+            field: "btn3",
             name: "详情操作",
             fixed: "right",
             width: "200px",
