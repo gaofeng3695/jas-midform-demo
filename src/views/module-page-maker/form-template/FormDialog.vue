@@ -81,11 +81,12 @@ export default {
       if (this.id && localStorage.getItem(this.id)) {
         let oForm = JSON.parse(localStorage.getItem(this.id) || {});
         this.formitems = oForm.formitems;
-        this.formform = oForm.formitems;
+        this.formform = oForm.formform;
       }
     },
 
     colNum(item) {
+      
       if (item.widthRate) {
         return 24 * item.widthRate;
       }
