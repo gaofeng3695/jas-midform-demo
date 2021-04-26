@@ -205,7 +205,7 @@ export default {
       }
     },
     getData() {
-      if (!this.formid) {
+      if (!(this.id && localStorage.getItem(this.id + "-table"))) {
         this.tableData = JSON.parse(
           localStorage.getItem("formList") || "[]"
         ).map((item) => ({ name: item }));
